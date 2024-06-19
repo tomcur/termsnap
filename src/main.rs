@@ -18,6 +18,9 @@ use termsnap_lib::{Screen, Term};
 mod ringbuffer;
 use ringbuffer::Ringbuffer;
 
+const DEFAULT_NUM_LINES: u16 = 24;
+const DEFAULT_NUM_COLUMNS: u16 = 80;
+
 /// Set the file descriptor to non-blocking.
 fn set_nonblocking(fd: impl AsFd) -> anyhow::Result<()> {
     let mut flags = rustix::fs::fcntl_getfl(fd.as_fd())?;
@@ -202,8 +205,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     let (lines, columns) = if cli.interactive {
-        let winsize = termios::tcgetwinsize(std::io::stdout()).unwrap();
-        (winsize.ws_row, winsize.ws_col)
+        termios::tcgetwinsize(std::io::stdout())
+            .map(|winsize| (winsize.ws_row, winsize.ws_col))
+            .unwrap_or((DEFAULT_NUM_LINES, DEFAULT_NUM_COLUMNS))
     } else {
         let lines: u16 = cli
             .lines
@@ -212,7 +216,7 @@ fn main() -> anyhow::Result<()> {
                     .ok()
                     .and_then(|lines| lines.parse().ok())
             })
-            .unwrap_or(24);
+            .unwrap_or(DEFAULT_NUM_LINES);
         let columns: u16 = cli
             .columns
             .or_else(|| {
@@ -220,7 +224,7 @@ fn main() -> anyhow::Result<()> {
                     .ok()
                     .and_then(|columns| columns.parse().ok())
             })
-            .unwrap_or(80);
+            .unwrap_or(DEFAULT_NUM_COLUMNS);
         (lines, columns)
     };
 
