@@ -1,0 +1,12 @@
+[package]
+name = "termsnap-lib"
+version = "0.1.0"
+edition = "2021"
+description = "Create SVGs from terminal output"
+keywords = ["terminal", "screenshot", "ansi", "svg", "vector-graphics"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/tomcur/termsnap"
+
+[dependencies]
+alacritty_terminal = { workspace = true }

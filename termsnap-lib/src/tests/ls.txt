@@ -1,0 +1,12 @@
+total 60
+drwxr-xr-x  6 thomas users  4096 Jun 19 15:58 [0m[01;34m.[0m
+drwxr-xr-x 34 thomas users  4096 Jun 16 10:28 [01;34m..[0m
+-rw-r--r--  1 thomas users 19422 Jun 18 17:22 Cargo.lock
+-rw-r--r--  1 thomas users   749 Jun 19 11:33 Cargo.toml
+-rw-r--r--  1 thomas users  1940 Jun 16 11:19 flake.lock
+-rw-r--r--  1 thomas users   640 Jun 16 11:19 flake.nix
+drwxr-xr-x  7 thomas users  4096 Jun 16 11:19 [01;34m.git[0m
+-rw-r--r--  1 thomas users   231 Jun 16 11:30 README.md
+drwxr-xr-x  2 thomas users  4096 Jun 19 12:20 [01;34msrc[0m
+drwxr-xr-x  3 thomas users  4096 Jun 18 14:36 [01;34mtarget[0m
+drwxr-xr-x  3 thomas users  4096 Jun 18 11:22 [01;34mtermsnap-lib[0m
