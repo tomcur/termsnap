@@ -55,7 +55,7 @@ impl<const C: usize> Ringbuffer<C> {
         start..end
     }
 
-    fn filled(&mut self) -> std::ops::Range<usize> {
+    fn filled(&self) -> std::ops::Range<usize> {
         let start = self.read_idx;
         let end = if self.read_idx <= self.write_idx {
             self.write_idx
