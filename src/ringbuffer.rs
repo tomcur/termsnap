@@ -7,18 +7,37 @@ pub struct Ringbuffer<const C: usize> {
     read_idx: usize,
 }
 
-pub enum IoResult {
-    Ok(usize),
-    EOF(usize),
+pub enum IoResult<'b> {
+    Ok(Bytes<'b>),
+    EOF(Bytes<'b>),
+    Err {
+        bytes: Bytes<'b>,
+        err: std::io::Error,
+    },
 }
 
-struct Iter<'b> {
+impl IoResult<'_> {
+    pub fn is_err(&self) -> bool {
+        matches!(self, IoResult::Err { .. })
+    }
+
+    pub fn bytes(&self) -> Bytes<'_> {
+        match self {
+            IoResult::Ok(bytes) => *bytes,
+            IoResult::EOF(bytes) => *bytes,
+            IoResult::Err { bytes, .. } => *bytes,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Bytes<'b> {
     buf: &'b [u8],
     to: usize,
     cur: usize,
 }
 
-impl<'b> Iterator for Iter<'b> {
+impl<'b> Iterator for Bytes<'b> {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -33,7 +52,14 @@ impl<'b> Iterator for Iter<'b> {
             Some(self.buf[idx])
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.to - self.cur;
+        (len, Some(len))
+    }
 }
+
+impl ExactSizeIterator for Bytes<'_> {}
 
 impl<const C: usize> Ringbuffer<C> {
     pub fn new() -> Self {
@@ -66,16 +92,31 @@ impl<const C: usize> Ringbuffer<C> {
         start..end
     }
 
+    fn bytes(&self, from: usize, to: usize) -> Bytes<'_> {
+        Bytes {
+            buf: &self.buf,
+            to,
+            cur: from,
+        }
+    }
+
+    /// The number of unread bytes written to the ringbuffer.
+    pub fn len(&self) -> usize {
+        self.filled().len()
+    }
+
+    /// Returns `true` if the ringbuffer contains no unread bytes.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Pull bytes from the source into the ringbuffer. This performs up to two `read` operations
     /// on the source. Returns an iterator over the bytes read and a status indicating the number
     /// of bytes read as well as whether EOF was reached.
     ///
     /// IO errors `ErrorKind::WouldBlock` and `ErrorKind::Interrupted` are ignored. Other errors
     /// are returned.
-    pub fn read<'b>(
-        &'b mut self,
-        read: &mut impl std::io::Read,
-    ) -> std::io::Result<(impl Iterator<Item = u8> + 'b, IoResult)> {
+    pub fn read<'b>(&'b mut self, read: &mut impl std::io::Read) -> IoResult<'b> {
         let mut bytes_read = 0;
         let mut eof = false;
         let from = self.write_idx;
@@ -112,25 +153,21 @@ impl<const C: usize> Ringbuffer<C> {
                     if matches!(err.kind(), ErrorKind::WouldBlock | ErrorKind::Interrupted) {
                         break;
                     } else {
-                        return Err(err);
+                        return IoResult::Err {
+                            bytes: self.bytes(from, self.write_idx),
+                            err,
+                        };
                     }
                 }
             }
         }
 
-        let res = if eof {
-            IoResult::EOF(bytes_read)
+        let bytes = self.bytes(from, self.write_idx);
+        if eof {
+            IoResult::EOF(bytes)
         } else {
-            IoResult::Ok(bytes_read)
-        };
-
-        let iter = Iter {
-            buf: &self.buf,
-            to: self.write_idx,
-            cur: from,
-        };
-
-        Ok((iter, res))
+            IoResult::Ok(bytes)
+        }
     }
 
     /// Write bytes from the ringbuffer into the writer. This performs up to two `write` operations
@@ -139,10 +176,7 @@ impl<const C: usize> Ringbuffer<C> {
     ///
     /// IO errors `ErrorKind::WouldBlock` and `ErrorKind::Interrupted` are ignored. Other errors
     /// are returned.
-    pub fn write<'b>(
-        &'b mut self,
-        write: &mut impl std::io::Write,
-    ) -> std::io::Result<(impl Iterator<Item = u8> + 'b, IoResult)> {
+    pub fn write<'b>(&'b mut self, write: &mut impl std::io::Write) -> IoResult<'b> {
         let mut bytes_written = 0;
         let mut eof = false;
         let from = self.read_idx;
@@ -179,24 +213,20 @@ impl<const C: usize> Ringbuffer<C> {
                     if matches!(err.kind(), ErrorKind::WouldBlock | ErrorKind::Interrupted) {
                         break;
                     } else {
-                        return Err(err);
+                        return IoResult::Err {
+                            bytes: self.bytes(from, self.read_idx),
+                            err,
+                        };
                     }
                 }
             }
         }
 
-        let res = if eof {
-            IoResult::EOF(bytes_written)
+        let bytes = self.bytes(from, self.read_idx);
+        if eof {
+            IoResult::EOF(bytes)
         } else {
-            IoResult::Ok(bytes_written)
-        };
-
-        let iter = Iter {
-            buf: &self.buf,
-            to: self.read_idx,
-            cur: from,
-        };
-
-        Ok((iter, res))
+            IoResult::Ok(bytes)
+        }
     }
 }

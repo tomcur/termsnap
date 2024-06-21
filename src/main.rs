@@ -16,7 +16,7 @@ use rustix::termios;
 use termsnap_lib::{Screen, Term};
 
 mod ringbuffer;
-use ringbuffer::Ringbuffer;
+use ringbuffer::{IoResult, Ringbuffer};
 
 const DEFAULT_NUM_LINES: u16 = 24;
 const DEFAULT_NUM_COLUMNS: u16 = 80;
@@ -140,16 +140,15 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
             {
                 let pty_stdout = pty.reader();
 
-                match stdout_buf.read(pty_stdout) {
-                    Ok((iter, result)) => {
-                        for byte in iter {
-                            term.process(byte);
-                        }
-                        if matches!(result, ringbuffer::IoResult::EOF(_)) {
-                            break;
-                        }
-                    }
-                    Err(_) => break,
+                let res = stdout_buf.read(pty_stdout);
+                for byte in res.bytes() {
+                    term.process(byte);
+                }
+
+                match res {
+                    IoResult::Ok(_) => {}
+                    IoResult::EOF(_) => break,
+                    IoResult::Err { .. } => break,
                 }
 
                 if stdout_buf.write(&mut parent_stdout).is_err() {
