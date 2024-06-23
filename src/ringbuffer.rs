@@ -54,7 +54,11 @@ impl<'b> Iterator for Bytes<'b> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.to - self.cur;
+        let len = if self.to < self.cur {
+            self.to + self.buf.len() - self.cur
+        } else {
+            self.to - self.cur
+        };
         (len, Some(len))
     }
 }
@@ -70,6 +74,7 @@ impl<const C: usize> Ringbuffer<C> {
         }
     }
 
+    /// Get a contiguous range of unwritten bytes.
     fn unfilled(&self) -> std::ops::Range<usize> {
         let start = self.write_idx;
         let end = if self.read_idx <= self.write_idx {
@@ -81,6 +86,7 @@ impl<const C: usize> Ringbuffer<C> {
         start..end
     }
 
+    /// Get a contiguous range of unread bytes.
     fn filled(&self) -> std::ops::Range<usize> {
         let start = self.read_idx;
         let end = if self.read_idx <= self.write_idx {
@@ -102,7 +108,11 @@ impl<const C: usize> Ringbuffer<C> {
 
     /// The number of unread bytes written to the ringbuffer.
     pub fn len(&self) -> usize {
-        self.filled().len()
+        if self.write_idx < self.read_idx {
+            self.write_idx + C - self.read_idx
+        } else {
+            self.write_idx - self.read_idx
+        }
     }
 
     /// Returns `true` if the ringbuffer contains no unread bytes.
