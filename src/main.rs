@@ -15,6 +15,7 @@ use rustix::termios;
 
 use termsnap_lib::{Screen, Term};
 
+mod poll;
 mod ringbuffer;
 use ringbuffer::{IoResult, Ringbuffer};
 
@@ -119,9 +120,6 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
     let parent_stdin = std::io::stdin();
     let parent_stdout = std::io::stdout();
 
-    set_nonblocking(&parent_stdin)?;
-    set_nonblocking(&parent_stdout)?;
-
     let screen = with_raw(parent_stdout, move |parent_stdout| {
         let mut parent_stdin = parent_stdin.lock();
         let mut parent_stdout = parent_stdout.lock();
@@ -134,39 +132,6 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
             if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event()
             {
                 break;
-            }
-
-            // error handling here is messy
-            {
-                let pty_stdout = pty.reader();
-
-                let res = stdout_buf.read(pty_stdout);
-                for byte in res.bytes() {
-                    term.process(byte);
-                }
-
-                match res {
-                    IoResult::Ok(_) => {}
-                    IoResult::EOF(_) => break,
-                    IoResult::Err { .. } => break,
-                }
-
-                if stdout_buf.write(&mut parent_stdout).is_err() {
-                    break;
-                }
-                parent_stdout.flush().unwrap();
-            }
-
-            {
-                let pty_stdin = pty.writer();
-
-                if stdin_buf.read(&mut parent_stdin).is_err() {
-                    break;
-                }
-                if stdin_buf.write(pty_stdin).is_err() {
-                    break;
-                }
-                pty_stdin.flush().unwrap();
             }
 
             if window_size_changed.load(std::sync::atomic::Ordering::Relaxed) {
@@ -183,6 +148,54 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
                     cell_height: 1,
                 });
                 term.resize(lines, columns);
+            }
+
+            let poll_result = match poll::poll([
+                (!stdin_buf.is_full())
+                    .then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
+                (!stdout_buf.is_full())
+                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
+                (!stdin_buf.is_empty())
+                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
+                (!stdout_buf.is_empty())
+                    .then(|| PollFd::from_borrowed_fd(parent_stdout.as_fd(), PollFlags::OUT)),
+            ]) {
+                Ok(r) => r,
+                Err(err) => {
+                    if err.kind() == std::io::ErrorKind::Interrupted {
+                        continue;
+                    } else {
+                        anyhow::bail!(err);
+                    }
+                }
+            };
+
+            if poll_result[0] {
+                let _ = stdin_buf.read(&mut parent_stdin);
+            }
+
+            if poll_result[1] {
+                let pty_stdout = pty.reader();
+                let res = stdout_buf.read(pty_stdout);
+                for byte in res.bytes() {
+                    term.process(byte);
+                }
+            }
+
+            if poll_result[2] {
+                let pty_stdin = pty.writer();
+                let _ = stdin_buf.write(pty_stdin);
+            }
+
+            if poll_result[3] {
+                match stdout_buf.write(&mut parent_stdout) {
+                    IoResult::Ok(bytes) | IoResult::EOF(bytes) => {
+                        if bytes.len() > 0 {
+                            parent_stdout.flush().unwrap();
+                        }
+                    }
+                    IoResult::Err { .. } => {}
+                }
             }
         }
 

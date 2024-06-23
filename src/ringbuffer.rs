@@ -120,6 +120,11 @@ impl<const C: usize> Ringbuffer<C> {
         self.len() == 0
     }
 
+    /// Returns `true` if the ringbuffer is full.
+    pub fn is_full(&self) -> bool {
+        self.len() == C
+    }
+
     /// Pull bytes from the source into the ringbuffer. This performs up to two `read` operations
     /// on the source. Returns an iterator over the bytes read and a status indicating the number
     /// of bytes read as well as whether EOF was reached.
