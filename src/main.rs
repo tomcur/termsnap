@@ -208,12 +208,22 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    if cli.interactive && cli.out.is_none() {
-        anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
-    }
+    if cli.interactive {
+        if cli.out.is_none() {
+            anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
+        }
 
-    if cli.interactive && (cli.lines.is_some() || cli.columns.is_some()) {
-        eprintln!("Setting `--lines` and `--columns` has no effect when `--interactive` is set");
+        if cli.lines.is_some() || cli.columns.is_some() {
+            eprintln!("Warning: Setting `--lines` and `--columns` has no effect when `--interactive` is set");
+        }
+
+        if !std::io::stdin().is_terminal() {
+            eprintln!("Warning: `--interactive` is set, but stdin is not a tty")
+        }
+
+        if !std::io::stdout().is_terminal() {
+            eprintln!("Warning: `--interactive` is set, but stdout is not a tty")
+        }
     }
 
     let (lines, columns) = if cli.interactive {
