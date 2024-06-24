@@ -1,7 +1,6 @@
 use std::fmt::{Display, Write};
 
 use alacritty_terminal::{
-    event::VoidListener,
     term::{
         cell::{Cell, Flags},
         test::TermSize,
@@ -314,24 +313,59 @@ impl Screen {
     }
 }
 
+pub trait PtyWriter {
+    fn write(&mut self, text: String);
+}
+
+impl<F: FnMut(String)> PtyWriter for F {
+    fn write(&mut self, text: String) {
+        self(text)
+    }
+}
+
+pub struct VoidPtyWriter;
+
+impl PtyWriter for VoidPtyWriter {
+    fn write(&mut self, _text: String) {}
+}
+
+struct EventProxy<Ev> {
+    handler: std::cell::RefCell<Ev>,
+}
+
+impl<W: PtyWriter> alacritty_terminal::event::EventListener for EventProxy<W> {
+    fn send_event(&self, event: alacritty_terminal::event::Event) {
+        use alacritty_terminal::event::Event as AEvent;
+        match event {
+            AEvent::PtyWrite(text) => self.handler.borrow_mut().write(text),
+            _ev => {}
+        }
+    }
+}
+
 /// An in-memory terminal emulator.
-pub struct Term {
+pub struct Term<Ev: PtyWriter> {
     lines: u16,
     columns: u16,
-    term: AlacrittyTerm<VoidListener>,
+    term: AlacrittyTerm<EventProxy<Ev>>,
     processor: vte::ansi::Processor<vte::ansi::StdSyncHandler>,
 }
 
-impl Term {
+impl<W: PtyWriter> Term<W> {
     /// Create a new emulated terminal with a cell matrix of `lines` by `columns`.
-    pub fn new(lines: u16, columns: u16) -> Term {
+    ///
+    /// `pty_writer` is used to send output from the emulated terminal in reponse to ANSI requests.
+    /// Use `[VoidWriter]` if you do not need to send responses to status requests.
+    pub fn new(lines: u16, columns: u16, pty_writer: W) -> Self {
         let term = AlacrittyTerm::new(
             Config::default(),
             &TermSize {
                 columns: columns.into(),
                 screen_lines: lines.into(),
             },
-            VoidListener,
+            EventProxy {
+                handler: pty_writer.into(),
+            },
         );
 
         Term {
@@ -373,7 +407,7 @@ impl Term {
 
 /// Feed an ANSI sequence through a terminal emulator, returning the resulting terminal screen contents.
 pub fn emulate(lines: u16, columns: u16, ansi_sequence: &[u8]) -> Screen {
-    let mut term = Term::new(lines, columns);
+    let mut term = Term::new(lines, columns, VoidPtyWriter);
     for &byte in ansi_sequence {
         term.process(byte);
     }

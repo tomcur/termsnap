@@ -1,9 +1,11 @@
 use std::{
-    collections::HashMap,
-    io::{Read, Write},
+    cell::RefCell,
+    collections::{HashMap, VecDeque},
+    io::{IsTerminal, Read, Write},
     os::fd::AsFd,
     path::PathBuf,
     sync::{atomic::AtomicBool, Arc},
+    time::Instant,
 };
 
 use alacritty_terminal::{
@@ -11,9 +13,12 @@ use alacritty_terminal::{
     tty::{EventedPty, EventedReadWrite, Pty},
 };
 use clap::Parser;
-use rustix::termios;
+use rustix::{
+    event::{PollFd, PollFlags},
+    termios,
+};
 
-use termsnap_lib::{Screen, Term};
+use termsnap_lib::{Screen, Term, VoidPtyWriter};
 
 mod poll;
 mod ringbuffer;
@@ -21,15 +26,6 @@ use ringbuffer::{IoResult, Ringbuffer};
 
 const DEFAULT_NUM_LINES: u16 = 24;
 const DEFAULT_NUM_COLUMNS: u16 = 80;
-
-/// Set the file descriptor to non-blocking.
-fn set_nonblocking(fd: impl AsFd) -> anyhow::Result<()> {
-    let mut flags = rustix::fs::fcntl_getfl(fd.as_fd())?;
-    flags |= rustix::fs::OFlags::NONBLOCK;
-    rustix::fs::fcntl_setfl(fd.as_fd(), flags)?;
-
-    Ok(())
-}
 
 /// Execute the callback with the attributes of the terminal corresponding to the file descriptor
 /// set to raw. When the callback finishes the terminal attributes are reset.
@@ -86,30 +82,126 @@ struct Cli {
     args: Option<Vec<String>>,
 }
 
-/// run the command in the pty non-interactively: i.e., simply read its stdout
-fn read_pty(pty: &mut Pty, term: &mut Term) -> Screen {
-    let reader = pty.reader();
+/// Run the command in the pty non-interactively. Data on Termsnap's stdin is proxied to the child
+/// pty. On EOF of Termsnap's stdin, ^D (End of Transmission) is sent to the child pty.
+fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen> {
+    /// ASCII End of Transmission byte (TTYs usually send this when ^D is hit)
+    const END_OF_TRANSMISSION: u8 = 0x04;
 
-    for byte in reader.bytes() {
-        match byte {
-            Ok(byte) => term.process(byte),
+    let pty_write: RefCell<VecDeque<String>> = RefCell::default();
+
+    let mut term = Term::new(lines, columns, |text| {
+        let mut pty_write = pty_write.borrow_mut();
+        if pty_write.len() < 128 {
+            pty_write.push_back(text);
+        }
+    });
+
+    let parent_stdin = std::io::stdin();
+    let mut parent_stdin = parent_stdin.lock();
+
+    let mut stdin_buf = Ringbuffer::<4096>::new();
+    let mut stdout_buf = [0; 4096];
+
+    enum EotState {
+        None,
+        SendEot,
+        SentEot(Instant),
+    }
+    let mut eot_state = EotState::None;
+
+    loop {
+        if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event() {
+            break;
+        }
+
+        let send_eot = match eot_state {
+            EotState::None => false,
+            EotState::SendEot => true,
+            EotState::SentEot(instant) => Instant::now().duration_since(instant).as_millis() >= 500,
+        };
+
+        // stop reading parent stdin while we have some special transmission queued
+        let read_stdin = !stdin_buf.is_full()
+            && matches!(eot_state, EotState::None)
+            && pty_write.borrow().is_empty();
+
+        if stdin_buf.is_empty() {
+            if let Some(text) = pty_write.borrow_mut().pop_front() {
+                if text.len() > stdin_buf.capacity() {
+                    panic!("requested to write more than stdin buf size");
+                }
+
+                let _ = stdin_buf.read(&mut text.as_bytes());
+            } else if send_eot {
+                let _ = stdin_buf.read(&mut &[b'\r', END_OF_TRANSMISSION][..]);
+                eot_state = EotState::SentEot(Instant::now());
+            }
+        }
+
+        let poll_result = match poll::poll(
+            [
+                read_stdin.then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
+                Some(PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
+                (!stdin_buf.is_empty() || send_eot || !pty_write.borrow().is_empty())
+                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
+            ],
+            // stop blocking every so often so we can resend EOT
+            Some(std::time::Duration::from_millis(500)),
+        ) {
+            Ok(r) => r,
             Err(err) => {
-                if !matches!(
-                    err.kind(),
-                    std::io::ErrorKind::Interrupted | std::io::ErrorKind::WouldBlock
-                ) {
-                    break;
+                if err.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                } else {
+                    anyhow::bail!(err);
                 }
             }
+        };
+
+        if poll_result[0] {
+            // read from parent stdin
+            if matches!(
+                stdin_buf.read(&mut parent_stdin),
+                IoResult::EOF(_) | IoResult::Err { .. }
+            ) {
+                eot_state = EotState::SendEot;
+            }
+        }
+
+        if poll_result[1] {
+            // read from pty
+            let pty_stdout = pty.reader();
+
+            match pty_stdout.read(&mut stdout_buf) {
+                Ok(read) => {
+                    for &byte in &stdout_buf[..read] {
+                        term.process(byte)
+                    }
+                }
+                Err(_err) => {}
+            }
+        }
+
+        if poll_result[2] {
+            // write to pty
+            let pty_stdin = pty.writer();
+
+            let _ = stdin_buf.write(pty_stdin);
         }
     }
 
-    term.current_screen()
+    Ok(term.current_screen())
 }
 
-/// run the command in the pty interactively by proxying between its and termsnap's stdin and
-/// stdout
-fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
+/// Run the command in the pty interactively by proxying between its and termsnap's stdin and
+/// stdout. If Termsnap has a controlling terminal it is set to raw mode to pass all input through
+/// to the child pty.
+fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen> {
+    // VoidPtyWriter is used here to ignore report responses from the emulated terminal: requests
+    // are proxied through to termsnap's controlling terminal instead.
+    let mut term = Term::new(lines, columns, VoidPtyWriter);
+
     let window_size_changed = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(
         signal_hook::consts::signal::SIGWINCH,
@@ -150,16 +242,19 @@ fn proxy_pty(pty: &mut Pty, term: &mut Term) -> anyhow::Result<Screen> {
                 term.resize(lines, columns);
             }
 
-            let poll_result = match poll::poll([
-                (!stdin_buf.is_full())
-                    .then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
-                (!stdout_buf.is_full())
-                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
-                (!stdin_buf.is_empty())
-                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
-                (!stdout_buf.is_empty())
-                    .then(|| PollFd::from_borrowed_fd(parent_stdout.as_fd(), PollFlags::OUT)),
-            ]) {
+            let poll_result = match poll::poll(
+                [
+                    (!stdin_buf.is_full())
+                        .then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
+                    (!stdout_buf.is_full())
+                        .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
+                    (!stdin_buf.is_empty())
+                        .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
+                    (!stdout_buf.is_empty())
+                        .then(|| PollFd::from_borrowed_fd(parent_stdout.as_fd(), PollFlags::OUT)),
+                ],
+                None,
+            ) {
                 Ok(r) => r,
                 Err(err) => {
                     if err.kind() == std::io::ErrorKind::Interrupted {
@@ -276,12 +371,10 @@ fn main() -> anyhow::Result<()> {
     )
     .unwrap();
 
-    let mut term = Term::new(lines, columns);
-
     let screen = if cli.interactive {
-        proxy_pty(&mut pty, &mut term)?
+        interactive(&mut pty, lines, columns)?
     } else {
-        read_pty(&mut pty, &mut term)
+        non_interactive(&mut pty, lines, columns)?
     };
 
     if let Some(out) = cli.out {

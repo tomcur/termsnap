@@ -106,6 +106,10 @@ impl<const C: usize> Ringbuffer<C> {
         }
     }
 
+    pub fn capacity(&self) -> usize {
+        C
+    }
+
     /// The number of unread bytes written to the ringbuffer.
     pub fn len(&self) -> usize {
         if self.write_idx < self.read_idx {
