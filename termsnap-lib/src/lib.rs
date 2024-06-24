@@ -32,10 +32,10 @@ impl Style {
             fg: cell.fg,
             bg: cell.bg,
 
-            bold: cell.flags.contains(Flags::BOLD | Flags::BOLD_ITALIC),
-            italic: cell.flags.contains(Flags::ITALIC | Flags::BOLD_ITALIC),
-            underline: cell.flags.contains(Flags::ALL_UNDERLINES),
-            strikethrough: cell.flags.contains(Flags::STRIKEOUT),
+            bold: cell.flags.intersects(Flags::BOLD),
+            italic: cell.flags.intersects(Flags::ITALIC),
+            underline: cell.flags.intersects(Flags::ALL_UNDERLINES),
+            strikethrough: cell.flags.intersects(Flags::STRIKEOUT),
         }
     }
 }
