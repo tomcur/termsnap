@@ -30,14 +30,18 @@ const DEFAULT_NUM_COLUMNS: u16 = 80;
 /// Execute the callback with the attributes of the terminal corresponding to the file descriptor
 /// set to raw. When the callback finishes the terminal attributes are reset.
 fn with_raw<F: AsFd, R>(mut fd: F, f: impl FnOnce(&mut F) -> R) -> R {
-    let orig_attrs = termios::tcgetattr(fd.as_fd()).expect("could not get terminal attributes");
-    let mut attrs = orig_attrs.clone();
-    attrs.make_raw();
-    termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, &attrs)
-        .expect("could not set terminal attributes");
+    let orig_attrs = termios::tcgetattr(fd.as_fd());
+    if let Ok(ref orig_attrs) = orig_attrs {
+        let mut attrs = orig_attrs.clone();
+        attrs.make_raw();
+        termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, &attrs)
+            .expect("could not set terminal attributes");
+    }
     let r = f(&mut fd);
-    termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, &orig_attrs)
-        .expect("could not set terminal attributes");
+    if let Ok(ref orig_attrs) = orig_attrs {
+        termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, &orig_attrs)
+            .expect("could not set terminal attributes");
+    }
     r
 }
 
