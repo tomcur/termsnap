@@ -381,15 +381,22 @@ fn main() -> anyhow::Result<()> {
         non_interactive(&mut pty, lines, columns)?
     };
 
+    let fonts = &[
+        "ui-monospace",
+        "Consolas",
+        "Liberation Mono",
+        "Source Code Pro",
+    ];
+
     if let Some(out) = cli.out {
         let mut file = std::fs::OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(true)
             .open(out)?;
-        write!(file, "{}", screen.to_svg())?;
+        write!(file, "{}", screen.to_svg(fonts))?;
     } else {
-        println!("{}", screen.to_svg())
+        println!("{}", screen.to_svg(fonts))
     }
 
     Ok(())

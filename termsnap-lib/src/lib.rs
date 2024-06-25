@@ -154,15 +154,20 @@ pub struct Screen {
 }
 
 impl Screen {
-    /// Get a [std::fmt::Display] that prints an SVG when formatted.
+    /// Get a [std::fmt::Display] that prints an SVG when formatted. Set `fonts` to specify fonts
+    /// to be included in the SVG's `font-family` style. `font-family` always includes `monospace`.
     ///
     /// The SVG is generated once [std::fmt::Display::fmt] is called.
-    pub fn to_svg(&self) -> impl Display + '_ {
-        struct Svg<'a> {
-            screen: &'a Screen,
+    pub fn to_svg<'s, 'f>(&'s self, fonts: &'f [&'f str]) -> impl Display + 's
+    where
+        'f: 's,
+    {
+        struct Svg<'s> {
+            screen: &'s Screen,
+            fonts: &'s [&'s str],
         }
 
-        impl<'a> Display for Svg<'a> {
+        impl<'s> Display for Svg<'s> {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 let Screen {
                     lines,
@@ -178,11 +183,21 @@ impl Screen {
                 )?;
 
                 f.write_str(
-                    r#"
+                    "
 <style>
   .screen {
-      font-family: "Source Code Pro";
-      font-size: 1px;
+    font-family: ",
+                )?;
+
+                for font in self.fonts {
+                    f.write_char('"')?;
+                    f.write_str(font)?;
+                    f.write_str("\", ")?;
+                }
+
+                f.write_str(
+                    r#"monospace;
+    font-size: 1px;
   }
 </style>
 <g class="screen">
@@ -294,7 +309,10 @@ impl Screen {
             }
         }
 
-        Svg { screen: self }
+        Svg {
+            screen: self,
+            fonts,
+        }
     }
 
     #[inline(always)]
