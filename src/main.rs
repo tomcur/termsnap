@@ -92,6 +92,8 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
     /// ASCII End of Transmission byte (TTYs usually send this when ^D is hit)
     const END_OF_TRANSMISSION: u8 = 0x04;
 
+    let mut last_written_byte: u8 = 0;
+
     let pty_write: RefCell<VecDeque<String>> = RefCell::default();
 
     let mut term = Term::new(lines, columns, |text| {
@@ -138,7 +140,12 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
 
                 let _ = stdin_buf.read(&mut text.as_bytes());
             } else if send_eot {
-                let _ = stdin_buf.read(&mut &[b'\r', END_OF_TRANSMISSION][..]);
+                let seq: &[u8] = if last_written_byte == b'\r' {
+                    &[END_OF_TRANSMISSION]
+                } else {
+                    &[b'\r', END_OF_TRANSMISSION]
+                };
+                let _ = stdin_buf.read(&mut &*seq);
                 eot_state = EotState::SentEot(Instant::now());
             }
         }
@@ -191,7 +198,10 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
             // write to pty
             let pty_stdin = pty.writer();
 
-            let _ = stdin_buf.write(pty_stdin);
+            let res = stdin_buf.write(pty_stdin);
+            if let Some(byte) = res.bytes().last() {
+                last_written_byte = byte;
+            }
         }
     }
 
