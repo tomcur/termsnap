@@ -12,13 +12,13 @@ to be compatible with many terminal control sequences.
 
 ## Examples
 
-### `termsnap -l 12 -c 60 -- ls -l --color=always`
+![Termsnap output of the cowsay command saying "hello world"](./media/cow.svg)
 
-![](./media/ls.svg)
+![Termsnap output of a dump of indexed terminal colors](./media/colors.svg)
 
-### `termsnap -l 12 -c 60 -- nvim ... ./script/example.py`
+![Termsnap output of example Python code viewed in Neovim](./media/nvim.svg)
 
-![](./media/nvim.svg)
+![Termsnap output of some tty commands](./media/tty.svg)
 
 ## A note on fonts
 
