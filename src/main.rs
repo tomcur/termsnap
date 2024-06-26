@@ -47,6 +47,12 @@ fn with_raw<F: AsFd, R>(mut fd: F, f: impl FnOnce(&mut F) -> R) -> R {
 
 /// Create an SVG of a command's output by running it in a pseudo-terminal (PTY) and interpreting
 /// the command's output by an in-memory terminal emulator.
+///
+/// To use programs requiring user interaction, you can set the `--interactive` flag. This proxies
+/// between the terminal used to invoke Termsnap and the child PTY. When Termsnap is used
+/// non-interactively, data on standard input is sent by Termsnap as input to the child PTY (e.g.,
+/// sending 0x03 (^C) causes the PTY driver to send the SIGINT interrupt to the child command). The
+/// child PTY's output is not shown.
 #[derive(Debug, clap::Parser)]
 #[command(version)]
 struct Cli {
