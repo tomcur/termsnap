@@ -92,6 +92,46 @@ impl Display for ColorDisplayWrapper {
     }
 }
 
+struct TextLine {
+    text: Vec<char>,
+}
+
+impl TextLine {
+    fn with_capacity(capacity: usize) -> Self {
+        TextLine {
+            text: Vec::with_capacity(capacity),
+        }
+    }
+
+    fn push_cell(&mut self, char: char) {
+        self.text.push(char);
+    }
+
+    fn clear(&mut self) {
+        self.text.clear();
+    }
+
+    fn len(&self) -> usize {
+        self.text.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Get the character cells of this text line, discarding trailing whitespace.
+    fn chars(&self) -> &[char] {
+        let trailing_whitespace_chars = self
+            .text
+            .iter()
+            .rev()
+            .position(|c| !c.is_whitespace())
+            .unwrap_or(self.text.len());
+        let end = self.text.len() - trailing_whitespace_chars;
+        &self.text[..end]
+    }
+}
+
 fn fmt_rect(
     f: &mut std::fmt::Formatter<'_>,
     x0: u16,
@@ -115,12 +155,14 @@ fn fmt_text(
     f: &mut std::fmt::Formatter<'_>,
     x: u16,
     y: u16,
-    text: &str,
+    text: &TextLine,
     style: &Style,
 ) -> std::fmt::Result {
+    let chars = text.chars();
+    let text_length = chars.len() as f32 * FONT_ASPECT_RATIO;
     write!(
         f,
-        r#"<text x="{x}" y="{y}" style="fill: {color};"#,
+        r#"<text x="{x}" y="{y}" textLength="{text_length}" style="fill: {color};"#,
         x = f32::from(x) * FONT_ASPECT_RATIO,
         y = f32::from(y) + FONT_ASCENT,
         color = ColorDisplayWrapper(style.fg),
@@ -142,7 +184,17 @@ fn fmt_text(
         }
     }
 
-    write!(f, r#"">{text}</text>"#)?;
+    f.write_str(r#"">"#)?;
+    for char in chars {
+        match *char {
+            // non-breaking space
+            ' ' => f.write_str("&#160;")?,
+            // escape tag opening
+            '<' => f.write_str("&#x3C;")?,
+            c => f.write_char(c)?,
+        }
+    }
+    f.write_str("</text>")?;
     Ok(())
 }
 
@@ -259,7 +311,7 @@ impl Screen {
                 }
 
                 // write text
-                let mut text = String::with_capacity(usize::from(*cols).next_power_of_two());
+                let mut text_line = TextLine::with_capacity(usize::from(*cols).next_power_of_two());
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
@@ -272,30 +324,26 @@ impl Screen {
                         let style_ = Style::from_cell(cell);
 
                         if style_ != style {
-                            if !text.is_empty() {
-                                fmt_text(f, start_x, y, &text, &style)?;
+                            if !text_line.is_empty() {
+                                fmt_text(f, start_x, y, &text_line, &style)?;
                             }
-                            text.clear();
+                            text_line.clear();
                             style = style_;
                         }
 
-                        if text.is_empty() {
+                        if text_line.is_empty() {
                             start_x = x;
                             if cell.c == ' ' {
                                 continue;
                             }
                         }
 
-                        match cell.c {
-                            ' ' => text.push_str("&#160;"),
-                            '<' => text.push_str("&#x3C;"),
-                            c => text.push(c),
-                        }
+                        text_line.push_cell(cell.c);
                     }
 
-                    if !text.is_empty() {
-                        fmt_text(f, start_x, y, &text, &style)?;
-                        text.clear();
+                    if !text_line.is_empty() {
+                        fmt_text(f, start_x, y, &text_line, &style)?;
+                        text_line.clear();
                     }
                 }
 
