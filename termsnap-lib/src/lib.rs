@@ -1,8 +1,12 @@
-use std::fmt::{Display, Write};
+use std::{
+    fmt::{Display, Write},
+    sync::OnceLock,
+};
 
 use alacritty_terminal::{
     term::{
         cell::{Cell, Flags},
+        color::Colors,
         test::TermSize,
         Config, Term as AlacrittyTerm,
     },
@@ -11,6 +15,11 @@ use alacritty_terminal::{
         ansi::{Color, Processor},
     },
 };
+
+mod colors;
+
+// ideally users can define their own colors
+static COLORS: OnceLock<Colors> = OnceLock::new();
 
 const FONT_ASPECT_RATIO: f32 = 0.6;
 const FONT_ASCENT: f32 = 0.750;
@@ -46,47 +55,15 @@ impl Display for ColorDisplayWrapper {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
             Color::Named(named_color) => {
-                use vte::ansi::NamedColor;
-                let color = match named_color {
-                    NamedColor::Black => "#073642",
-                    NamedColor::Red => "#dc322f",
-                    NamedColor::Green => "#859900",
-                    NamedColor::Yellow => "#b58900",
-                    NamedColor::Blue => "#268bd2",
-                    NamedColor::Magenta => "#d33682",
-                    NamedColor::Cyan => "#2aa198",
-                    NamedColor::White => "#eee8d5",
-                    NamedColor::BrightBlack => "#002b36",
-                    NamedColor::BrightRed => "#cb4b16",
-                    NamedColor::BrightGreen => "#586e75",
-                    NamedColor::BrightYellow => "#657b83",
-                    NamedColor::BrightBlue => "#839496",
-                    NamedColor::BrightMagenta => "#6c71c4",
-                    NamedColor::BrightCyan => "#93a1a1",
-                    NamedColor::BrightWhite => "#fdf6e3",
-                    NamedColor::Foreground => "#839496",
-                    NamedColor::Background => "#002b36",
-                    NamedColor::Cursor => "#839496",
-                    NamedColor::DimBlack => "#073642",
-                    NamedColor::DimRed => "#dc322f",
-                    NamedColor::DimGreen => "#859900",
-                    NamedColor::DimYellow => "#b58900",
-                    NamedColor::DimBlue => "#268bd2",
-                    NamedColor::DimMagenta => "#d33682",
-                    NamedColor::DimCyan => "#2aa198",
-                    NamedColor::DimWhite => "#eee8d5",
-                    NamedColor::DimForeground => "#839496",
-                    NamedColor::BrightForeground => "#839496",
-                };
-
-                f.write_str(color)
+                let colors = COLORS.get_or_init(|| colors::colors());
+                f.write_fmt(format_args!("{}", colors[named_color as usize].unwrap()))
             }
             Color::Spec(rgb) => {
                 write!(f, "{}", rgb)
             }
-            Color::Indexed(_idx) => {
-                // TODO
-                f.write_str("#ff0000")
+            Color::Indexed(idx) => {
+                let colors = COLORS.get_or_init(|| colors::colors());
+                f.write_fmt(format_args!("{}", colors[idx as usize].unwrap()))
             }
         }
     }
