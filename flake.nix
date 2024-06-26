@@ -21,6 +21,8 @@
               rust-analyzer
               rustc
               rustfmt
+              bashInteractive
+              cowsay
             ];
           };
       }
