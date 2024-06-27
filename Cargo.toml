@@ -18,8 +18,8 @@ alacritty_terminal = "0.24"
 
 [dependencies]
 alacritty_terminal = { workspace = true }
-arrayvec = "0.7.4"
 anyhow = "1.0.86"
+arrayvec = "0.7.4"
 clap = { version = "4.5.7", features = ["derive"] }
 rustix = { version = "0.38.34", features = ["event", "fs", "termios"] }
 signal-hook = "0.3.17"
