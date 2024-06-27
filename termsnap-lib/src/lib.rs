@@ -186,7 +186,8 @@ impl Screen {
     /// Get a [std::fmt::Display] that prints an SVG when formatted. Set `fonts` to specify fonts
     /// to be included in the SVG's `font-family` style. `font-family` always includes `monospace`.
     ///
-    /// The SVG is generated once [std::fmt::Display::fmt] is called.
+    /// The SVG is generated once [std::fmt::Display::fmt] is called; cache the call's output if
+    /// you want to use it multiple times.
     pub fn to_svg<'s, 'f>(&'s self, fonts: &'f [&'f str]) -> impl Display + 's
     where
         'f: 's,
@@ -356,7 +357,11 @@ impl Screen {
     }
 }
 
+/// A sink for responses sent by the [terminal emulator](Term). The terminal emulator sends
+/// responses to ANSI requests. Implement this trait to process these responses, e.g., by sending
+/// them to the requesting pseudoterminal.
 pub trait PtyWriter {
+    /// Write `text` on the terminal in response to an ANSI request.
     fn write(&mut self, text: String);
 }
 
@@ -366,6 +371,7 @@ impl<F: FnMut(String)> PtyWriter for F {
     }
 }
 
+/// A [`PtyWriter`] that ignores all responses.
 pub struct VoidPtyWriter;
 
 impl PtyWriter for VoidPtyWriter {
@@ -397,8 +403,8 @@ pub struct Term<Ev: PtyWriter> {
 impl<W: PtyWriter> Term<W> {
     /// Create a new emulated terminal with a cell matrix of `lines` by `columns`.
     ///
-    /// `pty_writer` is used to send output from the emulated terminal in reponse to ANSI requests.
-    /// Use `[VoidWriter]` if you do not need to send responses to status requests.
+    /// [`pty_writer`](PtyWriter) is used to send output from the emulated terminal in reponse to ANSI requests.
+    /// Use [`VoidPtyWriter`] if you do not need to send responses to status requests.
     pub fn new(lines: u16, columns: u16, pty_writer: W) -> Self {
         let term = AlacrittyTerm::new(
             Config::default(),
