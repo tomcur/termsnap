@@ -436,6 +436,8 @@ impl<W: PtyWriter> Term<W> {
             columns: columns.into(),
             screen_lines: lines.into(),
         };
+        self.lines = lines;
+        self.columns = columns;
         self.term.resize(new_size);
     }
 
