@@ -12,7 +12,9 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
       in
-      {
+      rec {
+        packages.termsnap = pkgs.callPackage ./default.nix { };
+        packages.default = packages.termsnap;
         devShells.default = pkgs.mkShell
           {
             buildInputs = with pkgs; [
