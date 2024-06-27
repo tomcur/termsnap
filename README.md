@@ -4,6 +4,8 @@
 
 **Create SVGs from terminal output**
 
+[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](#license)
+
 </div>
 
 Termsnap turns terminal output into vector graphics. It uses an in-memory
