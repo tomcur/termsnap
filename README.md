@@ -17,7 +17,7 @@ to be compatible with many terminal control sequences.
 ## Usage
 
 See `$ termsnap --help` for CLI usage documentation. For example, to run the
-`ls` command and store the output in an SVG, run:
+`ls` command and store the output in an SVG file, run:
 
 ```bash
 $ termsnap -- ls -l > ./out.svg
@@ -35,6 +35,30 @@ examples send automated input to an interactive bash session.
 ![Termsnap output of example Python code viewed in Neovim](./media/nvim.svg)
 
 ![Termsnap output of some tty commands](./media/tty.svg)
+
+## Installation
+
+Install using Cargo:
+
+```bash
+$ cargo install termsnap
+
+# Run ls
+$ termsnap --columns 80 --lines 36 -- ls --color=always -l
+
+# Run an interactive bash session
+$ termsnap --interactive --out ./interactive-bash.svg -- bash
+```
+
+Run using Nix flakes:
+
+```bash
+# Run ls
+$ nix run github:tomcur/termsnap -- --columns 80 --lines 36 -- ls --color=always -l
+
+# Run an interactive bash session
+$ nix run github:tomcur/termsnap -- --interactive --out ./interactive-bash.svg -- bash
+```
 
 ## A note on fonts
 
