@@ -6,6 +6,26 @@
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="36" height="18" style="fill: #002b36;" /><text x="6" y="1.75" textLength="30.000002" style="fill: #839496;">This setting is ignored if `--interactive` is set.</text><text x="1.2" y="3.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-c</text><text x="2.4" y="3.75" textLength="0.6" style="fill: #839496;">,</text><text x="3.6000001" y="3.75" textLength="5.4" style="fill: #839496; font-weight: 600;">--columns</text><text x="9.6" y="3.75" textLength="5.4" style="fill: #839496;">&#x3C;COLUMNS></text><text x="6" y="4.75" textLength="30.000002" style="fill: #839496;">The number of columns in the emulated terminal. If</text><text x="0.6" y="5.75" textLength="35.4" style="fill: #839496;">unset, this defaults to value of the COLUMNS enviornment va</text><text x="0" y="6.75" textLength="18.6" style="fill: #839496;">riable if set, or 80 otherwise.</text><text x="6" y="8.75" textLength="30.000002" style="fill: #839496;">This setting is ignored if `--interactive` is set.</text><text x="1.2" y="10.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-h</text><text x="2.4" y="10.75" textLength="0.6" style="fill: #839496;">,</text><text x="3.6000001" y="10.75" textLength="3.6000001" style="fill: #839496; font-weight: 600;">--help</text><text x="6" y="11.75" textLength="21.6" style="fill: #839496;">Print help (see a summary with '-h')</text><text x="1.2" y="13.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-V</text><text x="2.4" y="13.75" textLength="0.6" style="fill: #839496;">,</text><text x="3.6000001" y="13.75" textLength="5.4" style="fill: #839496; font-weight: 600;">--version</text><text x="6" y="14.75" textLength="7.8" style="fill: #839496;">Print version</text><text x="0" y="15.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="0" y="16.75" textLength="2.4" style="fill: #839496;">exit</text>
+<rect x="0" y="0" width="36" height="18" style="fill: #002b36;" />
+<text x="6" y="1.75" textLength="30.000002" style="fill: #839496;">This setting is ignored if `--interactive` is set.</text>
+<text x="1.2" y="3.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-c</text>
+<text x="2.4" y="3.75" textLength="0.6" style="fill: #839496;">,</text>
+<text x="3.6000001" y="3.75" textLength="5.4" style="fill: #839496; font-weight: 600;">--columns</text>
+<text x="9.6" y="3.75" textLength="5.4" style="fill: #839496;">&#x3C;COLUMNS></text>
+<text x="6" y="4.75" textLength="30.000002" style="fill: #839496;">The number of columns in the emulated terminal. If</text>
+<text x="0.6" y="5.75" textLength="35.4" style="fill: #839496;">unset, this defaults to value of the COLUMNS enviornment va</text>
+<text x="0" y="6.75" textLength="18.6" style="fill: #839496;">riable if set, or 80 otherwise.</text>
+<text x="6" y="8.75" textLength="30.000002" style="fill: #839496;">This setting is ignored if `--interactive` is set.</text>
+<text x="1.2" y="10.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-h</text>
+<text x="2.4" y="10.75" textLength="0.6" style="fill: #839496;">,</text>
+<text x="3.6000001" y="10.75" textLength="3.6000001" style="fill: #839496; font-weight: 600;">--help</text>
+<text x="6" y="11.75" textLength="21.6" style="fill: #839496;">Print help (see a summary with '-h')</text>
+<text x="1.2" y="13.75" textLength="1.2" style="fill: #839496; font-weight: 600;">-V</text>
+<text x="2.4" y="13.75" textLength="0.6" style="fill: #839496;">,</text>
+<text x="3.6000001" y="13.75" textLength="5.4" style="fill: #839496; font-weight: 600;">--version</text>
+<text x="6" y="14.75" textLength="7.8" style="fill: #839496;">Print version</text>
+<text x="0" y="15.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="0" y="16.75" textLength="2.4" style="fill: #839496;">exit</text>
+
 </g>
 </svg>

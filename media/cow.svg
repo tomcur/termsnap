@@ -6,6 +6,19 @@
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="36" height="18" style="fill: #002b36;" /><text x="0" y="0.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="1.2" y="0.75" textLength="11.400001" style="fill: #839496;">cowsay Hello, world</text><text x="0.6" y="1.75" textLength="8.400001" style="fill: #839496;">______________</text><text x="0" y="2.75" textLength="9.6" style="fill: #839496;">&#x3C; Hello, world ></text><text x="0.6" y="3.75" textLength="8.400001" style="fill: #839496;">--------------</text><text x="4.8" y="4.75" textLength="4.8" style="fill: #839496;">\ &#160;&#160;^__^</text><text x="5.4" y="5.75" textLength="9" style="fill: #839496;">\ &#160;(oo)\_______</text><text x="7.2000003" y="6.75" textLength="9.6" style="fill: #839496;">(__)\ &#160;&#160;&#160;&#160;&#160;&#160;)\/\</text><text x="9.6" y="7.75" textLength="5.4" style="fill: #839496;">||----w |</text><text x="9.6" y="8.75" textLength="5.4" style="fill: #839496;">|| &#160;&#160;&#160;&#160;||</text><text x="0" y="9.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="0" y="10.75" textLength="2.4" style="fill: #839496;">exit</text>
+<rect x="0" y="0" width="36" height="18" style="fill: #002b36;" />
+<text x="0" y="0.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="1.2" y="0.75" textLength="11.400001" style="fill: #839496;">cowsay Hello, world</text>
+<text x="0.6" y="1.75" textLength="8.400001" style="fill: #839496;">______________</text>
+<text x="0" y="2.75" textLength="9.6" style="fill: #839496;">&#x3C; Hello, world ></text>
+<text x="0.6" y="3.75" textLength="8.400001" style="fill: #839496;">--------------</text>
+<text x="4.8" y="4.75" textLength="4.8" style="fill: #839496;">\ &#160;&#160;^__^</text>
+<text x="5.4" y="5.75" textLength="9" style="fill: #839496;">\ &#160;(oo)\_______</text>
+<text x="7.2000003" y="6.75" textLength="9.6" style="fill: #839496;">(__)\ &#160;&#160;&#160;&#160;&#160;&#160;)\/\</text>
+<text x="9.6" y="7.75" textLength="5.4" style="fill: #839496;">||----w |</text>
+<text x="9.6" y="8.75" textLength="5.4" style="fill: #839496;">|| &#160;&#160;&#160;&#160;||</text>
+<text x="0" y="9.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="0" y="10.75" textLength="2.4" style="fill: #839496;">exit</text>
+
 </g>
 </svg>

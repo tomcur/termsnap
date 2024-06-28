@@ -6,6 +6,15 @@
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="36" height="12" style="fill: #002b36;" /><text x="0" y="0.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="1.2" y="0.75" textLength="4.2000003" style="fill: #839496;">echo $-</text><text x="0" y="1.75" textLength="3" style="fill: #839496;">imBHs</text><text x="0" y="2.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="1.2" y="2.75" textLength="1.8000001" style="fill: #839496;">tty</text><text x="0" y="3.75" textLength="6" style="fill: #839496;">/dev/pts/5</text><text x="0" y="4.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text><text x="0" y="5.75" textLength="2.4" style="fill: #839496;">exit</text>
+<rect x="0" y="0" width="36" height="12" style="fill: #002b36;" />
+<text x="0" y="0.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="1.2" y="0.75" textLength="4.2000003" style="fill: #839496;">echo $-</text>
+<text x="0" y="1.75" textLength="3" style="fill: #839496;">imBHs</text>
+<text x="0" y="2.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="1.2" y="2.75" textLength="1.8000001" style="fill: #839496;">tty</text>
+<text x="0" y="3.75" textLength="6" style="fill: #839496;">/dev/pts/5</text>
+<text x="0" y="4.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
+<text x="0" y="5.75" textLength="2.4" style="fill: #839496;">exit</text>
+
 </g>
 </svg>
