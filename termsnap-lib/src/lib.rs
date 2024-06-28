@@ -19,21 +19,19 @@ const FONT_ASPECT_RATIO: f32 = 0.6;
 const FONT_ASCENT: f32 = 0.750;
 
 #[derive(PartialEq)]
-struct Style {
+struct TextStyle {
     fg: Rgb,
-    bg: Rgb,
     bold: bool,
     italic: bool,
     underline: bool,
     strikethrough: bool,
 }
 
-impl Style {
+impl TextStyle {
     /// private conversion from alacritty Cell to Style
     fn from_cell(colors: &Colors, cell: &Cell) -> Self {
-        Style {
+        TextStyle {
             fg: colors.to_rgb(cell.fg),
-            bg: colors.to_rgb(cell.bg),
 
             bold: cell.flags.intersects(Flags::BOLD),
             italic: cell.flags.intersects(Flags::ITALIC),
@@ -107,7 +105,7 @@ fn fmt_text(
     x: u16,
     y: u16,
     text: &TextLine,
-    style: &Style,
+    style: &TextStyle,
 ) -> std::fmt::Result {
     let chars = text.chars();
     let text_length = chars.len() as f32 * FONT_ASPECT_RATIO;
@@ -284,13 +282,13 @@ impl Screen {
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
-                    let mut style = Style::from_cell(&colors, cell);
+                    let mut style = TextStyle::from_cell(&colors, cell);
                     let mut start_x = 0;
 
                     for x in 0..*cols {
                         let idx = self.screen.idx(y, x);
                         let cell = &cells[idx];
-                        let style_ = Style::from_cell(&colors, cell);
+                        let style_ = TextStyle::from_cell(&colors, cell);
 
                         if style_ != style {
                             if !text_line.is_empty() {
