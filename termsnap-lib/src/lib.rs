@@ -1,3 +1,5 @@
+#[forbid(unsafe_code)]
+
 use std::fmt::{Display, Write};
 
 use alacritty_terminal::{
