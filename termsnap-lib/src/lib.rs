@@ -1,33 +1,27 @@
-use std::{
-    fmt::{Display, Write},
-    sync::OnceLock,
-};
+use std::fmt::{Display, Write};
 
 use alacritty_terminal::{
     term::{
         cell::{Cell, Flags},
-        color::Colors,
         test::TermSize,
         Config, Term as AlacrittyTerm,
     },
     vte::{
         self,
-        ansi::{Color, Processor},
+        ansi::{Processor, Rgb},
     },
 };
 
 mod colors;
-
-// ideally users can define their own colors
-static COLORS: OnceLock<Colors> = OnceLock::new();
+use colors::Colors;
 
 const FONT_ASPECT_RATIO: f32 = 0.6;
 const FONT_ASCENT: f32 = 0.750;
 
 #[derive(PartialEq)]
 struct Style {
-    fg: Color,
-    bg: Color,
+    fg: Rgb,
+    bg: Rgb,
     bold: bool,
     italic: bool,
     underline: bool,
@@ -36,35 +30,15 @@ struct Style {
 
 impl Style {
     /// private conversion from alacritty Cell to Style
-    fn from_cell(cell: &Cell) -> Self {
+    fn from_cell(colors: &Colors, cell: &Cell) -> Self {
         Style {
-            fg: cell.fg,
-            bg: cell.bg,
+            fg: colors.to_rgb(cell.fg),
+            bg: colors.to_rgb(cell.bg),
 
             bold: cell.flags.intersects(Flags::BOLD),
             italic: cell.flags.intersects(Flags::ITALIC),
             underline: cell.flags.intersects(Flags::ALL_UNDERLINES),
             strikethrough: cell.flags.intersects(Flags::STRIKEOUT),
-        }
-    }
-}
-
-struct ColorDisplayWrapper(Color);
-
-impl Display for ColorDisplayWrapper {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.0 {
-            Color::Named(named_color) => {
-                let colors = COLORS.get_or_init(|| colors::colors());
-                f.write_fmt(format_args!("{}", colors[named_color as usize].unwrap()))
-            }
-            Color::Spec(rgb) => {
-                write!(f, "{}", rgb)
-            }
-            Color::Indexed(idx) => {
-                let colors = COLORS.get_or_init(|| colors::colors());
-                f.write_fmt(format_args!("{}", colors[idx as usize].unwrap()))
-            }
         }
     }
 }
@@ -115,7 +89,7 @@ fn fmt_rect(
     y0: u16,
     x1: u16,
     y1: u16,
-    color: Color,
+    color: Rgb,
 ) -> std::fmt::Result {
     write!(
         f,
@@ -124,7 +98,7 @@ fn fmt_rect(
         y = y0,
         width = f32::from(x1 - x0 + 1) * FONT_ASPECT_RATIO,
         height = y1 - y0 + 1,
-        color = ColorDisplayWrapper(color),
+        color = color,
     )
 }
 
@@ -142,7 +116,7 @@ fn fmt_text(
         r#"<text x="{x}" y="{y}" textLength="{text_length}" style="fill: {color};"#,
         x = f32::from(x) * FONT_ASPECT_RATIO,
         y = f32::from(y) + FONT_ASCENT,
-        color = ColorDisplayWrapper(style.fg),
+        color = style.fg,
     )?;
 
     if style.bold {
@@ -234,6 +208,18 @@ impl Screen {
 "#,
                 )?;
 
+                let colors = Colors::default();
+
+                let main_bg = colors::most_common_color(&colors, self.screen);
+                fmt_rect(
+                    f,
+                    0,
+                    0,
+                    self.screen.cols().saturating_sub(1),
+                    self.screen.lines().saturating_sub(1),
+                    main_bg,
+                )?;
+
                 // find background rectangles to draw by greedily flooding lines then flooding down columns
                 let mut drawn = vec![false; usize::from(*lines) * usize::from(*cols)];
                 for y0 in 0..*lines {
@@ -245,14 +231,19 @@ impl Screen {
                         }
 
                         let cell = &cells[idx];
-                        let bg = cell.bg;
+                        let bg = colors.to_rgb(cell.bg);
+
+                        if bg == main_bg {
+                            continue;
+                        }
+
                         let mut end_x = x0;
                         let mut end_y = y0;
 
                         for x1 in x0 + 1..*cols {
                             let idx = self.screen.idx(y0, x1);
                             let cell = &cells[idx];
-                            if cell.bg == bg {
+                            if colors.to_rgb(cell.bg) == bg {
                                 end_x = x1;
                             } else {
                                 break;
@@ -264,7 +255,7 @@ impl Screen {
                             for x1 in x0 + 1..*cols {
                                 let idx = self.screen.idx(y1, x1);
                                 let cell = &cells[idx];
-                                if cell.bg != bg {
+                                if colors.to_rgb(cell.bg) != bg {
                                     all = false;
                                     break;
                                 }
@@ -293,13 +284,13 @@ impl Screen {
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
-                    let mut style = Style::from_cell(cell);
+                    let mut style = Style::from_cell(&colors, cell);
                     let mut start_x = 0;
 
                     for x in 0..*cols {
                         let idx = self.screen.idx(y, x);
                         let cell = &cells[idx];
-                        let style_ = Style::from_cell(cell);
+                        let style_ = Style::from_cell(&colors, cell);
 
                         if style_ != style {
                             if !text_line.is_empty() {

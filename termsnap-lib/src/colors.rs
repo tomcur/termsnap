@@ -1,21 +1,45 @@
 use alacritty_terminal::{
-    term::color::Colors,
-    vte::ansi::{NamedColor, Rgb},
+    term::color::Colors as AlacrittyColors,
+    vte::ansi::{Color, NamedColor, Rgb},
 };
 
-/// Generate a terminal color table
-pub fn colors() -> Colors {
-    let mut colors = Colors::default();
+use std::collections::HashMap;
 
-    fill_named(&mut colors);
-    fill_cube(&mut colors);
-    fill_gray_ramp(&mut colors);
+use crate::Screen;
 
-    colors
+pub(crate) struct Colors {
+    colors: AlacrittyColors,
+}
+
+impl Colors {
+    pub fn to_rgb(&self, color: Color) -> Rgb {
+        match color {
+            Color::Named(named_color) => {
+                self.colors[named_color as usize].expect("all colors should be defined")
+            }
+            Color::Indexed(idx) => {
+                self.colors[usize::from(idx)].expect("all colors should be defined")
+            }
+            Color::Spec(rgb) => rgb,
+        }
+    }
+}
+
+impl Default for Colors {
+    /// Generate a terminal color table
+    fn default() -> Colors {
+        let mut colors = AlacrittyColors::default();
+
+        fill_named(&mut colors);
+        fill_cube(&mut colors);
+        fill_gray_ramp(&mut colors);
+
+        Colors { colors }
+    }
 }
 
 /// Fill named terminal colors with the solarized dark theme
-fn fill_named(colors: &mut Colors) {
+fn fill_named(colors: &mut AlacrittyColors) {
     colors[NamedColor::Black as usize] = Some("#073642".parse().unwrap());
     colors[NamedColor::Black] = Some("#073642".parse().unwrap());
     colors[NamedColor::Red] = Some("#dc322f".parse().unwrap());
@@ -48,7 +72,7 @@ fn fill_named(colors: &mut Colors) {
     colors[NamedColor::BrightForeground] = Some("#839496".parse().unwrap());
 }
 
-fn fill_cube(colors: &mut Colors) {
+fn fill_cube(colors: &mut AlacrittyColors) {
     // adapted from: https://github.com/alacritty/alacritty/blob/da554e41f3a91ed6cc5db66b23bf65c58529db83/alacritty/src/display/color.rs#L91-L115
     let mut index = 16usize;
 
@@ -70,7 +94,7 @@ fn fill_cube(colors: &mut Colors) {
     debug_assert!(index == 232);
 }
 
-fn fill_gray_ramp(colors: &mut Colors) {
+fn fill_gray_ramp(colors: &mut AlacrittyColors) {
     // adapted from: https://github.com/alacritty/alacritty/blob/da554e41f3a91ed6cc5db66b23bf65c58529db83/alacritty/src/display/color.rs#L118-L139
     let mut index: usize = 232;
 
@@ -86,4 +110,59 @@ fn fill_gray_ramp(colors: &mut Colors) {
     }
 
     debug_assert!(index == 256);
+}
+
+pub(crate) fn most_common_color(colors: &Colors, screen: &Screen) -> Rgb {
+    use std::hash::{Hash, Hasher};
+
+    #[derive(PartialEq, Eq, Copy, Clone)]
+    struct Rgb_(Rgb);
+
+    impl Hash for Rgb_ {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            state.write_u32(
+                u32::from(self.0.r) << 16 + u32::from(self.0.g) << 8 + u32::from(self.0.b),
+            );
+        }
+    }
+
+    struct NoHashHasher(u64);
+
+    impl Default for NoHashHasher {
+        fn default() -> Self {
+            NoHashHasher(0)
+        }
+    }
+
+    impl Hasher for NoHashHasher {
+        fn finish(&self) -> u64 {
+            self.0
+        }
+
+        fn write(&mut self, bytes: &[u8]) {
+            for byte in bytes {
+                self.0 <<= 8;
+                self.0 += u64::from(*byte);
+            }
+        }
+    }
+
+    let mut counts = HashMap::<Rgb_, u32, _>::with_capacity_and_hasher(
+        16,
+        std::hash::BuildHasherDefault::<NoHashHasher>::default(),
+    );
+
+    for idx in 0..screen.lines() * screen.cols() {
+        let cell = &screen.cells[usize::from(idx)];
+        let bg = &cell.bg;
+
+        *counts.entry(Rgb_(colors.to_rgb(*bg))).or_insert(0) += 1;
+    }
+
+    counts
+        .iter()
+        .max_by_key(|(_, count)| *count)
+        .map(|(k, _)| k.0)
+        // counts can be empty for 0x0 screens
+        .unwrap_or(Rgb { r: 0, g: 0, b: 0 })
 }
