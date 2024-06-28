@@ -89,7 +89,7 @@ fn fmt_rect(
     y1: u16,
     color: Rgb,
 ) -> std::fmt::Result {
-    write!(
+    writeln!(
         f,
         r#"<rect x="{x}" y="{y}" width="{width}" height="{height}" style="fill: {color};" />"#,
         x = f32::from(x0) * FONT_ASPECT_RATIO,
@@ -152,7 +152,7 @@ fn fmt_text(
 
         prev_char_was_space = *char == ' ';
     }
-    f.write_str("</text>")?;
+    f.write_str("</text>\n")?;
 
     Ok(())
 }
