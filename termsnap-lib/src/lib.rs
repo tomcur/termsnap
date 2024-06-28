@@ -134,16 +134,26 @@ fn fmt_text(
     }
 
     f.write_str(r#"">"#)?;
+    let mut prev_char_was_space = false;
     for char in chars {
         match *char {
-            // non-breaking space
-            ' ' => f.write_str("&#160;")?,
+            ' ' => {
+                if prev_char_was_space {
+                    // non-breaking space
+                    f.write_str("&#160;")?
+                } else {
+                    f.write_char(' ')?
+                }
+            }
             // escape tag opening
             '<' => f.write_str("&#x3C;")?,
             c => f.write_char(c)?,
         }
+
+        prev_char_was_space = *char == ' ';
     }
     f.write_str("</text>")?;
+
     Ok(())
 }
 
