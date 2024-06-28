@@ -28,12 +28,6 @@ export PATH="$PWD/target/release":$PATH
     sleep 0.05
 ) | termsnap -o ./media/tty.svg -l 12 -c 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
 
-(
-    sleep 0.05
-    printf "termsnap --help\r"
-    sleep 0.05
-) | termsnap -o ./media/help.svg -l 18 -c 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
-
 termsnap -o ./media/nvim.svg -l 12 -c 60 -- nvim --clean \
     -c "set number" \
     -c "syntax enable" \
