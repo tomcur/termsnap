@@ -36,16 +36,6 @@ $ termsnap -l 9 -c 28 -- cowsay Hello, world
 ![Termsnap output of the cowsay command saying "hello world"](./media/cow.svg)
 
 ```bash
-$ (
-    sleep 0.05
-    echo -ne "for x in {16..231}; do printf \"\\\e[48;5;\${x}m%03d\\\e[0m \" \$x; done\r"
-    sleep 0.05
-) | termsnap -l 16 -c 72 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
-```
-
-![Termsnap output of a dump of indexed terminal colors](./media/colors.svg)
-
-```bash
 $ termsnap -l 12 -c 60 -- nvim --clean ./scripts/example.py <<EOF
 :set number
 :syntax enable
@@ -54,6 +44,16 @@ EOF
 ```
 
 ![Termsnap output of example Python code viewed in Neovim](./media/nvim.svg)
+
+```bash
+$ (
+    sleep 0.05
+    echo -ne "for x in {16..231}; do printf \"\\\e[48;5;\${x}m%03d\\\e[0m \" \$x; done\r"
+    sleep 0.05
+) | termsnap -l 16 -c 72 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
+```
+
+![Termsnap output of a dump of indexed terminal colors](./media/colors.svg)
 
 ```bash
 $ (
