@@ -8,11 +8,8 @@ cargo build --release
 
 export PATH="$PWD/target/release":$PATH
 
-(
-    sleep 0.05
-    printf "cowsay Hello, world\r"
-    sleep 0.05
-) | termsnap -o ./media/cow.svg -l 18 -c 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
+termsnap -o ./media/cow.svg -l 10 -c 32 -- cowsay Hello, world
+
 
 (
     sleep 0.05
