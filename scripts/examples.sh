@@ -12,6 +12,8 @@ termsnap -o ./media/cow.svg -l 9 -c 28 -- cowsay Hello, world
 
 
 (
+    # `sleep` gives bash time to be ready for the command, if this is omitted
+    # the appearance of prompts can get messed up.
     sleep 0.05
     echo -ne "for x in {16..231}; do printf \"\\\e[48;5;\${x}m%03d\\\e[0m \" \$x; done\r"
     sleep 0.05
