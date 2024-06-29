@@ -8,7 +8,7 @@ cargo build --release
 
 export PATH="$PWD/target/release":$PATH
 
-termsnap -o ./media/cow.svg -l 10 -c 32 -- cowsay Hello, world
+termsnap -o ./media/cow.svg -l 9 -c 28 -- cowsay Hello, world
 
 
 (
