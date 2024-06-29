@@ -10,6 +10,7 @@ export PATH="$PWD/target/release":$PATH
 
 termsnap -o ./media/cow.svg -l 9 -c 28 -- cowsay Hello, world
 
+termsnap -o ./media/tokei.svg -l 22 -c 80 -- tokei
 
 (
     # `sleep` gives bash time to be ready for the command, if this is omitted

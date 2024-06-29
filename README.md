@@ -69,6 +69,12 @@ $ (
 
 ![Termsnap output of some tty commands](./media/tty.svg)
 
+```bash
+$ termsnap -o ./media/tokei.svg -l 22 -c 80 -- tokei
+```
+
+![Termsnap output of the Tokei lines of code counter](./media/tokei.svg)
+
 ## Installation
 
 Install using Cargo:

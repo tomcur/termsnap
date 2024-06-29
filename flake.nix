@@ -24,7 +24,10 @@
               rustc
               rustfmt
               bashInteractive
+
+              # Programs for Termsnap examples
               cowsay
+              tokei
             ];
           };
       }
