@@ -121,7 +121,7 @@ pub(crate) fn most_common_color(colors: &Colors, screen: &Screen) -> Rgb {
     impl Hash for Rgb_ {
         fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
             state.write_u32(
-                u32::from(self.0.r) << 16 + u32::from(self.0.g) << 8 + u32::from(self.0.b),
+                (u32::from(self.0.r) << 16) + (u32::from(self.0.g) << 8) + u32::from(self.0.b),
             );
         }
     }
