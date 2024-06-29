@@ -28,8 +28,8 @@ export PATH="$PWD/target/release":$PATH
     sleep 0.05
 ) | termsnap -o ./media/tty.svg -l 12 -c 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
 
-termsnap -o ./media/nvim.svg -l 12 -c 60 -- nvim --clean \
-    -c "set number" \
-    -c "syntax enable" \
-    -c "lua vim.defer_fn(function() vim.cmd('q') end, 0)" \
-    ./scripts/example.py
+termsnap -o ./media/nvim.svg -l 12 -c 60 -- nvim --clean ./scripts/example.py <<EOF
+:set number
+:syntax enable
+:q
+EOF
