@@ -1,11 +1,11 @@
 use alacritty_terminal::{
     term::color::Colors as AlacrittyColors,
-    vte::ansi::{Color, NamedColor, Rgb},
+    vte::ansi::{Color, NamedColor, Rgb as AlacrittyRgb},
 };
 
 use std::collections::HashMap;
 
-use crate::Screen;
+use crate::{Rgb, Screen};
 
 pub(crate) struct Colors {
     colors: AlacrittyColors,
@@ -13,7 +13,7 @@ pub(crate) struct Colors {
 
 impl Colors {
     pub fn to_rgb(&self, color: Color) -> Rgb {
-        match color {
+        let AlacrittyRgb { r, g, b } = match color {
             Color::Named(named_color) => {
                 self.colors[named_color as usize].expect("all colors should be defined")
             }
@@ -21,7 +21,9 @@ impl Colors {
                 self.colors[usize::from(idx)].expect("all colors should be defined")
             }
             Color::Spec(rgb) => rgb,
-        }
+        };
+
+        Rgb { r, g, b }
     }
 }
 
@@ -81,7 +83,7 @@ fn fill_cube(colors: &mut AlacrittyColors) {
         for g in 0..6 {
             for b in 0..6 {
                 // Override colors 16..232 with the config (if present).
-                colors[index] = Some(Rgb {
+                colors[index] = Some(AlacrittyRgb {
                     r: if r == 0 { 0 } else { r * 40 + 55 },
                     g: if g == 0 { 0 } else { g * 40 + 55 },
                     b: if b == 0 { 0 } else { b * 40 + 55 },
@@ -101,7 +103,7 @@ fn fill_gray_ramp(colors: &mut AlacrittyColors) {
     // Build colors.
     for i in 0..24 {
         let value = i * 10 + 8;
-        colors[index] = Some(Rgb {
+        colors[index] = Some(AlacrittyRgb {
             r: value,
             g: value,
             b: value,
@@ -112,7 +114,7 @@ fn fill_gray_ramp(colors: &mut AlacrittyColors) {
     debug_assert!(index == 256);
 }
 
-pub(crate) fn most_common_color(colors: &Colors, screen: &Screen) -> Rgb {
+pub(crate) fn most_common_color(screen: &Screen) -> Rgb {
     use std::hash::{Hash, Hasher};
 
     #[derive(PartialEq, Eq, Copy, Clone)]
@@ -156,7 +158,7 @@ pub(crate) fn most_common_color(colors: &Colors, screen: &Screen) -> Rgb {
         let cell = &screen.cells[usize::from(idx)];
         let bg = &cell.bg;
 
-        *counts.entry(Rgb_(colors.to_rgb(*bg))).or_insert(0) += 1;
+        *counts.entry(Rgb_(*bg)).or_insert(0) += 1;
     }
 
     counts

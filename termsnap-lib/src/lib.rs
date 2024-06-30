@@ -1,17 +1,13 @@
 #[forbid(unsafe_code)]
-
 use std::fmt::{Display, Write};
 
 use alacritty_terminal::{
     term::{
-        cell::{Cell, Flags},
+        cell::{Cell as AlacrittyCell, Flags},
         test::TermSize,
         Config, Term as AlacrittyTerm,
     },
-    vte::{
-        self,
-        ansi::{Processor, Rgb},
-    },
+    vte::{self, ansi::Processor},
 };
 
 mod colors;
@@ -19,6 +15,46 @@ use colors::Colors;
 
 const FONT_ASPECT_RATIO: f32 = 0.6;
 const FONT_ASCENT: f32 = 0.750;
+
+/// A color in the sRGB color space.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Rgb {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl Display for Rgb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "#{:02x?}{:02x?}{:02x}", self.r, self.g, self.b)
+    }
+}
+
+/// The unicode character and style of a single cell in the terminal grid.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Cell {
+    pub c: char,
+    pub fg: Rgb,
+    pub bg: Rgb,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
+    pub strikethrough: bool,
+}
+
+impl Cell {
+    fn from_alacritty_cell(colors: &Colors, cell: &AlacrittyCell) -> Self {
+        Cell {
+            c: cell.c,
+            fg: colors.to_rgb(cell.fg),
+            bg: colors.to_rgb(cell.bg),
+            bold: cell.flags.intersects(Flags::BOLD),
+            italic: cell.flags.intersects(Flags::ITALIC),
+            underline: cell.flags.intersects(Flags::ALL_UNDERLINES),
+            strikethrough: cell.flags.intersects(Flags::STRIKEOUT),
+        }
+    }
+}
 
 #[derive(PartialEq)]
 struct TextStyle {
@@ -31,14 +67,22 @@ struct TextStyle {
 
 impl TextStyle {
     /// private conversion from alacritty Cell to Style
-    fn from_cell(colors: &Colors, cell: &Cell) -> Self {
-        TextStyle {
-            fg: colors.to_rgb(cell.fg),
+    fn from_cell(cell: &Cell) -> Self {
+        let Cell {
+            fg,
+            bold,
+            italic,
+            underline,
+            strikethrough,
+            ..
+        } = *cell;
 
-            bold: cell.flags.intersects(Flags::BOLD),
-            italic: cell.flags.intersects(Flags::ITALIC),
-            underline: cell.flags.intersects(Flags::ALL_UNDERLINES),
-            strikethrough: cell.flags.intersects(Flags::STRIKEOUT),
+        TextStyle {
+            fg,
+            bold,
+            italic,
+            underline,
+            strikethrough,
         }
     }
 }
@@ -218,9 +262,7 @@ impl Screen {
 "#,
                 )?;
 
-                let colors = Colors::default();
-
-                let main_bg = colors::most_common_color(&colors, self.screen);
+                let main_bg = colors::most_common_color(self.screen);
                 fmt_rect(
                     f,
                     0,
@@ -241,7 +283,7 @@ impl Screen {
                         }
 
                         let cell = &cells[idx];
-                        let bg = colors.to_rgb(cell.bg);
+                        let bg = cell.bg;
 
                         if bg == main_bg {
                             continue;
@@ -253,7 +295,7 @@ impl Screen {
                         for x1 in x0 + 1..*columns {
                             let idx = self.screen.idx(y0, x1);
                             let cell = &cells[idx];
-                            if colors.to_rgb(cell.bg) == bg {
+                            if cell.bg == bg {
                                 end_x = x1;
                             } else {
                                 break;
@@ -265,7 +307,7 @@ impl Screen {
                             for x1 in x0 + 1..*columns {
                                 let idx = self.screen.idx(y1, x1);
                                 let cell = &cells[idx];
-                                if colors.to_rgb(cell.bg) != bg {
+                                if cell.bg != bg {
                                     all = false;
                                     break;
                                 }
@@ -294,13 +336,13 @@ impl Screen {
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
-                    let mut style = TextStyle::from_cell(&colors, cell);
+                    let mut style = TextStyle::from_cell(cell);
                     let mut start_x = 0;
 
                     for x in 0..*columns {
                         let idx = self.screen.idx(y, x);
                         let cell = &cells[idx];
-                        let style_ = TextStyle::from_cell(&colors, cell);
+                        let style_ = TextStyle::from_cell(cell);
 
                         if style_ != style {
                             if !text_line.is_empty() {
@@ -355,6 +397,17 @@ impl Screen {
     /// The number of screen columns in this snapshot.
     pub fn columns(&self) -> u16 {
         self.columns
+    }
+
+    /// An iterator over all cells in the terminal grid. This iterates over all columns in the
+    /// first line from left to right, then the second line, etc.
+    pub fn cells(&self) -> impl Iterator<Item = &Cell> {
+        self.cells.iter()
+    }
+
+    /// Get the cell at the terminal grid position specified by `line` and `column`.
+    pub fn get(&self, line: u16, column: u16) -> Option<&Cell> {
+        self.cells.get(self.idx(line, column))
     }
 }
 
@@ -444,6 +497,9 @@ impl<W: PtyWriter> Term<W> {
 
     /// Get a snapshot of the current terminal screen.
     pub fn current_screen(&self) -> Screen {
+        // ideally users can define their own colors
+        let colors = Colors::default();
+
         Screen {
             lines: self.lines,
             columns: self.columns,
@@ -451,7 +507,7 @@ impl<W: PtyWriter> Term<W> {
                 .term
                 .grid()
                 .display_iter()
-                .map(|point_cell| point_cell.cell.clone())
+                .map(|point_cell| Cell::from_alacritty_cell(&colors, point_cell.cell))
                 .collect(),
         }
     }
