@@ -162,7 +162,7 @@ fn fmt_text(
 /// A static snapshot of a terminal screen.
 pub struct Screen {
     lines: u16,
-    cols: u16,
+    columns: u16,
     cells: Vec<Cell>,
 }
 
@@ -185,14 +185,14 @@ impl Screen {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 let Screen {
                     lines,
-                    cols,
+                    columns,
                     ref cells,
                 } = self.screen;
 
                 write!(
                     f,
                     r#"<svg viewBox="0 0 {} {}" xmlns="http://www.w3.org/2000/svg">"#,
-                    f32::from(self.screen.cols) * FONT_ASPECT_RATIO,
+                    f32::from(self.screen.columns) * FONT_ASPECT_RATIO,
                     lines,
                 )?;
 
@@ -225,15 +225,15 @@ impl Screen {
                     f,
                     0,
                     0,
-                    self.screen.cols().saturating_sub(1),
+                    self.screen.columns().saturating_sub(1),
                     self.screen.lines().saturating_sub(1),
                     main_bg,
                 )?;
 
                 // find background rectangles to draw by greedily flooding lines then flooding down columns
-                let mut drawn = vec![false; usize::from(*lines) * usize::from(*cols)];
+                let mut drawn = vec![false; usize::from(*lines) * usize::from(*columns)];
                 for y0 in 0..*lines {
-                    for x0 in 0..*cols {
+                    for x0 in 0..*columns {
                         let idx = self.screen.idx(y0, x0);
 
                         if drawn[idx] {
@@ -250,7 +250,7 @@ impl Screen {
                         let mut end_x = x0;
                         let mut end_y = y0;
 
-                        for x1 in x0 + 1..*cols {
+                        for x1 in x0 + 1..*columns {
                             let idx = self.screen.idx(y0, x1);
                             let cell = &cells[idx];
                             if colors.to_rgb(cell.bg) == bg {
@@ -262,7 +262,7 @@ impl Screen {
 
                         for y1 in y0 + 1..*lines {
                             let mut all = true;
-                            for x1 in x0 + 1..*cols {
+                            for x1 in x0 + 1..*columns {
                                 let idx = self.screen.idx(y1, x1);
                                 let cell = &cells[idx];
                                 if colors.to_rgb(cell.bg) != bg {
@@ -290,14 +290,14 @@ impl Screen {
                 }
 
                 // write text
-                let mut text_line = TextLine::with_capacity(usize::from(*cols).next_power_of_two());
+                let mut text_line = TextLine::with_capacity(usize::from(*columns).next_power_of_two());
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
                     let mut style = TextStyle::from_cell(&colors, cell);
                     let mut start_x = 0;
 
-                    for x in 0..*cols {
+                    for x in 0..*columns {
                         let idx = self.screen.idx(y, x);
                         let cell = &cells[idx];
                         let style_ = TextStyle::from_cell(&colors, cell);
@@ -344,7 +344,7 @@ impl Screen {
 
     #[inline(always)]
     fn idx(&self, y: u16, x: u16) -> usize {
-        usize::from(y) * usize::from(self.cols) + usize::from(x)
+        usize::from(y) * usize::from(self.columns) + usize::from(x)
     }
 
     /// The number of screen lines in this snapshot.
@@ -353,8 +353,8 @@ impl Screen {
     }
 
     /// The number of screen columns in this snapshot.
-    pub fn cols(&self) -> u16 {
-        self.cols
+    pub fn columns(&self) -> u16 {
+        self.columns
     }
 }
 
@@ -446,7 +446,7 @@ impl<W: PtyWriter> Term<W> {
     pub fn current_screen(&self) -> Screen {
         Screen {
             lines: self.lines,
-            cols: self.columns,
+            columns: self.columns,
             cells: self
                 .term
                 .grid()

@@ -152,7 +152,7 @@ pub(crate) fn most_common_color(colors: &Colors, screen: &Screen) -> Rgb {
         std::hash::BuildHasherDefault::<NoHashHasher>::default(),
     );
 
-    for idx in 0..screen.lines() * screen.cols() {
+    for idx in 0..screen.lines() * screen.columns() {
         let cell = &screen.cells[usize::from(idx)];
         let bg = &cell.bg;
 
