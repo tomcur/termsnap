@@ -17,10 +17,6 @@ pub enum IoResult<'b> {
 }
 
 impl IoResult<'_> {
-    pub fn is_err(&self) -> bool {
-        matches!(self, IoResult::Err { .. })
-    }
-
     pub fn bytes(&self) -> Bytes<'_> {
         match self {
             IoResult::Ok(bytes) => *bytes,
