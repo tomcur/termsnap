@@ -1,5 +1,4 @@
 #[forbid(unsafe_code)]
-
 use std::{
     cell::RefCell,
     collections::{HashMap, VecDeque},
@@ -72,9 +71,6 @@ struct Cli {
     #[arg(short, long)]
     out: Option<PathBuf>,
 
-    /// The command to run. Its output will be turned into an SVG.
-    command: String,
-
     /// The number of lines in the emulated terminal. If unset, this defaults to value of the LINES
     /// environment variable if set, or 24 otherwise.
     ///
@@ -88,6 +84,18 @@ struct Cli {
     /// This setting is ignored if `--interactive` is set.
     #[arg(short, long)]
     columns: Option<u16>,
+
+    /// The command to run. Its output will be turned into an SVG. If this argument is missing and Termsnap's STDIN is not a TTY, data on STDIN is interpreted
+    /// by the terminal emulator and the result rendered.
+    ///
+    /// For example, use the following invocation to run and render the output of the ls program:
+    ///
+    /// $ termsnap -- ls --color=always -l
+    ///
+    /// alternatively, send captured terminal output into Termsnap through a pipe:
+    ///
+    /// $ script -O /dev/null -qc "ls --color=always -l" | termsnap
+    command: Option<String>,
 
     /// Arguments provided to the command.
     #[arg(trailing_var_arg(true))]
@@ -322,6 +330,18 @@ fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen
     Ok(screen)
 }
 
+/// Interpret `read` as a stream of ANSI-escaped terminal data. Pass the bytes through a terminal
+/// emulator and return the resulting screen.
+fn from_read(read: &mut impl Read, lines: u16, columns: u16) -> anyhow::Result<Screen> {
+    let mut term = Term::new(lines, columns, VoidPtyWriter);
+
+    for byte in read.bytes() {
+        term.process(byte?);
+    }
+
+    Ok(term.current_screen())
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
@@ -367,36 +387,49 @@ fn main() -> anyhow::Result<()> {
         (lines, columns)
     };
 
-    let mut pty = alacritty_terminal::tty::new(
-        &alacritty_terminal::tty::Options {
-            shell: Some(alacritty_terminal::tty::Shell::new(
-                cli.command,
-                cli.args.unwrap_or(vec![]),
-            )),
-            working_directory: None,
-            hold: false,
-            env: {
-                let mut env = HashMap::new();
-                env.insert("LINES".to_owned(), lines.to_string());
-                env.insert("COLUMNS".to_owned(), columns.to_string());
-                env.insert("TERM".to_owned(), "linux".to_owned());
-                env
-            },
-        },
-        alacritty_terminal::event::WindowSize {
-            num_lines: lines.into(),
-            num_cols: columns.into(),
-            cell_width: 1,
-            cell_height: 1,
-        },
-        0,
-    )
-    .unwrap();
+    let screen = match cli.command {
+        Some(command) => {
+            let mut pty = alacritty_terminal::tty::new(
+                &alacritty_terminal::tty::Options {
+                    shell: Some(alacritty_terminal::tty::Shell::new(
+                        command,
+                        cli.args.unwrap_or(vec![]),
+                    )),
+                    working_directory: None,
+                    hold: false,
+                    env: {
+                        let mut env = HashMap::new();
+                        env.insert("LINES".to_owned(), lines.to_string());
+                        env.insert("COLUMNS".to_owned(), columns.to_string());
+                        env.insert("TERM".to_owned(), "linux".to_owned());
+                        env
+                    },
+                },
+                alacritty_terminal::event::WindowSize {
+                    num_lines: lines.into(),
+                    num_cols: columns.into(),
+                    cell_width: 1,
+                    cell_height: 1,
+                },
+                0,
+            )
+            .unwrap();
 
-    let screen = if cli.interactive {
-        interactive(&mut pty, lines, columns)?
-    } else {
-        non_interactive(&mut pty, lines, columns)?
+            if cli.interactive {
+                interactive(&mut pty, lines, columns)?
+            } else {
+                non_interactive(&mut pty, lines, columns)?
+            }
+        }
+        None => {
+            let stdin = std::io::stdin();
+            if stdin.is_terminal() {
+                anyhow::bail!("No command given to execute. See 'termsnap --help'. To use Termsnap without it executing a command, you can pipe data into Termsnap.");
+            }
+
+            let mut stdin = stdin.lock();
+            from_read(&mut stdin, lines, columns)?
+        }
     };
 
     let fonts = &[
