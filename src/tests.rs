@@ -3,7 +3,7 @@ use clap::Parser;
 use super::{run, Cli};
 
 #[test]
-fn bash_echo() {
+fn echo() {
     let cli = Cli::parse_from([
         "termsnap",
         "-l",
@@ -11,9 +11,8 @@ fn bash_echo() {
         "-c",
         "80",
         "--",
-        "bash",
-        "-c",
-        "echo 'hello, world'",
+        "echo",
+        "hello, world",
     ]);
 
     let screen = run(cli).unwrap();
