@@ -25,6 +25,9 @@ mod poll;
 mod ringbuffer;
 use ringbuffer::{IoResult, Ringbuffer};
 
+#[cfg(test)]
+mod tests;
+
 const DEFAULT_NUM_LINES: u16 = 24;
 const DEFAULT_NUM_COLUMNS: u16 = 80;
 
@@ -344,8 +347,32 @@ fn from_read(read: &mut impl Read, lines: u16, columns: u16) -> anyhow::Result<S
 }
 
 fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
+    let out = cli.out.take();
+    let screen = run(cli)?;
 
+    let fonts = &[
+        "ui-monospace",
+        "Consolas",
+        "Liberation Mono",
+        "Source Code Pro",
+    ];
+
+    if let Some(out) = out {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(out)?;
+        write!(file, "{}", screen.to_svg(fonts))?;
+    } else {
+        println!("{}", screen.to_svg(fonts))
+    }
+
+    Ok(())
+}
+
+fn run(cli: Cli) -> anyhow::Result<Screen> {
     if cli.interactive {
         if cli.out.is_none() {
             anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
@@ -433,23 +460,5 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    let fonts = &[
-        "ui-monospace",
-        "Consolas",
-        "Liberation Mono",
-        "Source Code Pro",
-    ];
-
-    if let Some(out) = cli.out {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(out)?;
-        write!(file, "{}", screen.to_svg(fonts))?;
-    } else {
-        println!("{}", screen.to_svg(fonts))
-    }
-
-    Ok(())
+    Ok(screen)
 }
