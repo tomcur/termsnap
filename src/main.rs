@@ -85,8 +85,9 @@ struct Cli {
     #[arg(short, long)]
     columns: Option<u16>,
 
-    /// The command to run. Its output will be turned into an SVG. If this argument is missing and Termsnap's STDIN is not a TTY, data on STDIN is interpreted
-    /// by the terminal emulator and the result rendered.
+    /// The command to run. Its output will be turned into an SVG. If this argument is missing and
+    /// Termsnap's STDIN is not a TTY, data on STDIN is interpreted by the terminal emulator and
+    /// the result rendered.
     ///
     /// For example, use the following invocation to run and render the output of the ls program:
     ///
