@@ -19,5 +19,5 @@ fn bash_echo() {
     let screen = run(cli).unwrap();
     let content: String = screen.cells().map(|c| c.c).collect();
 
-    assert!(content.starts_with("hello, world"));
+    assert_eq!(&content[..12], "hello, world");
 }
