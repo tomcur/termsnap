@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.2.0] - 2024-07-01
+
+### Breaking
+- *(lib)* [**breaking**] rename cols -> columns
+([c0fe244](https://github.com/tomcur/termsnap/commit/c0fe2446fac97b01f8f367f872e15282a2d399a6))
+
+
+### Features
+- *(lib)* add methods to access terminal grid cells to Screen
+([a1883d7](https://github.com/tomcur/termsnap/commit/a1883d75067fcc5cc38ff84988af5e76108b7a0a))
+- implement rendering from ANSI-escaped data on stdin
+([e603f97](https://github.com/tomcur/termsnap/commit/e603f97ef80d2c1c06e32bb20a58045b5b24c2d1))
+
+
+### Bug Fixes
+- separate main logic and CLI arguments consistency checks
+([501e629](https://github.com/tomcur/termsnap/commit/501e6293849df204d8427e8888876a6feec0238f))
+
+
+### Refactor
+- explicitly pass around I/O handles, fixes test
+([0f35410](https://github.com/tomcur/termsnap/commit/0f3541084faaa07d08ed0a33298ede352c38e10a))
+- remove unused code
+([adfb990](https://github.com/tomcur/termsnap/commit/adfb99049215377ad136541ff49333dee341ed32))
+
+
+### Testing
+- add test hitting the main code path
+([fc27cd6](https://github.com/tomcur/termsnap/commit/fc27cd6e5f069a21483b234afcbaabec196a1ac5))
+([c7e4149](https://github.com/tomcur/termsnap/commit/c7e4149756fb1a1b40f4350ed4e1f929ade66120))
+([ff0d0e5](https://github.com/tomcur/termsnap/commit/ff0d0e5d8c9b35c8930353e465246d56bf9a2f62))
+([be39b89](https://github.com/tomcur/termsnap/commit/be39b89c04357363cbf67b39e8cf67a4400f975b))
+
+
 ## [0.1.3] - 2024-06-29
 
 ### Bug Fixes
