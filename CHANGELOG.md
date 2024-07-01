@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1] - 2024-07-01
+
+### Documentation
+- *(lib)* add usage example
+([f4aebdd](https://github.com/tomcur/termsnap/commit/f4aebdd8c682ce8b6124975b6ae37df5d84cb334))
+
+
+### Other
+- format
+([3470a57](https://github.com/tomcur/termsnap/commit/3470a57eb610350f8271e4c62cbab71363fe6a43))
+
+
 ## [0.2.0] - 2024-07-01
 
 ### Breaking
