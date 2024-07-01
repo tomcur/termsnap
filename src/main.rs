@@ -357,12 +357,34 @@ fn from_read(read: &mut impl Read, lines: u16, columns: u16) -> anyhow::Result<S
 
 fn main() -> anyhow::Result<()> {
     let mut cli = Cli::parse();
+
+    let mut parent_stdin = std::io::stdin().lock();
+    let mut parent_stdout = std::io::stdout().lock();
+
+    if cli.interactive {
+        if cli.out.is_none() {
+            anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
+        }
+
+        if cli.lines.is_some() || cli.columns.is_some() {
+            eprintln!("Warning: Setting `--lines` and `--columns` has no effect when `--interactive` is set");
+        }
+
+        if !parent_stdin.as_fd().is_terminal() {
+            eprintln!("Warning: `--interactive` is set, but stdin is not a tty")
+        }
+
+        if !parent_stdin.as_fd().is_terminal() {
+            eprintln!("Warning: `--interactive` is set, but stdout is not a tty")
+        }
+    }
+
+    if cli.command.is_none() && parent_stdin.as_fd().is_terminal() {
+        anyhow::bail!("No command given to execute. See 'termsnap --help'. To use Termsnap without it executing a command, you can pipe data into Termsnap.");
+    }
+
     let out = cli.out.take();
-    let screen = run(
-        cli,
-        &mut std::io::stdin().lock(),
-        &mut std::io::stdout().lock(),
-    )?;
+    let screen = run(cli, &mut parent_stdin, &mut parent_stdout)?;
 
     let fonts = &[
         "ui-monospace",
@@ -390,24 +412,6 @@ where
     I: Read + AsFd,
     O: Write + AsFd,
 {
-    if cli.interactive {
-        if cli.out.is_none() {
-            anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
-        }
-
-        if cli.lines.is_some() || cli.columns.is_some() {
-            eprintln!("Warning: Setting `--lines` and `--columns` has no effect when `--interactive` is set");
-        }
-
-        if !parent_stdin.as_fd().is_terminal() {
-            eprintln!("Warning: `--interactive` is set, but stdin is not a tty")
-        }
-
-        if !parent_stdin.as_fd().is_terminal() {
-            eprintln!("Warning: `--interactive` is set, but stdout is not a tty")
-        }
-    }
-
     let (lines, columns) = if cli.interactive {
         termios::tcgetwinsize(std::io::stdout())
             .map(|winsize| (winsize.ws_row, winsize.ws_col))
@@ -466,13 +470,7 @@ where
                 non_interactive(parent_stdin, &mut pty, lines, columns)?
             }
         }
-        None => {
-            if parent_stdin.as_fd().is_terminal() {
-                anyhow::bail!("No command given to execute. See 'termsnap --help'. To use Termsnap without it executing a command, you can pipe data into Termsnap.");
-            }
-
-            from_read(parent_stdin, lines, columns)?
-        }
+        None => from_read(parent_stdin, lines, columns)?,
     };
 
     Ok(screen)
