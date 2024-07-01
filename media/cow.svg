@@ -8,7 +8,7 @@
 <g class="screen">
 <rect x="0" y="0" width="16.800001" height="9" style="fill: #002b36;" />
 <text x="0.6" y="0.75" textLength="8.400001" style="fill: #839496;">______________</text>
-<text x="0" y="1.75" textLength="9.6" style="fill: #839496;">&#x3C; Hello, world ></text>
+<text x="0" y="1.75" textLength="9.6" style="fill: #839496;">&lt; Hello, world ></text>
 <text x="0.6" y="2.75" textLength="8.400001" style="fill: #839496;">--------------</text>
 <text x="4.8" y="3.75" textLength="4.8" style="fill: #839496;">\ &#160;&#160;^__^</text>
 <text x="5.4" y="4.75" textLength="9" style="fill: #839496;">\ &#160;(oo)\_______</text>
