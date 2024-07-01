@@ -108,7 +108,15 @@ struct Cli {
 
 /// Run the command in the pty non-interactively. Data on Termsnap's stdin is proxied to the child
 /// pty. On EOF of Termsnap's stdin, ^D (End of Transmission) is sent to the child pty.
-fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen> {
+fn non_interactive<I>(
+    parent_stdin: &mut I,
+    pty: &mut Pty,
+    lines: u16,
+    columns: u16,
+) -> anyhow::Result<Screen>
+where
+    I: Read + AsFd,
+{
     /// ASCII End of Transmission byte (TTYs usually send this when ^D is hit)
     const END_OF_TRANSMISSION: u8 = 0x04;
 
@@ -122,9 +130,6 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
             pty_write.push_back(text);
         }
     });
-
-    let parent_stdin = std::io::stdin();
-    let mut parent_stdin = parent_stdin.lock();
 
     let mut stdin_buf = Ringbuffer::<4096>::new();
     let mut stdout_buf = [0; 4096];
@@ -193,7 +198,7 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
         if poll_result[0] {
             // read from parent stdin
             if matches!(
-                stdin_buf.read(&mut parent_stdin),
+                stdin_buf.read(parent_stdin),
                 IoResult::EOF(_) | IoResult::Err { .. }
             ) {
                 eot_state = EotState::SendEot;
@@ -231,7 +236,17 @@ fn non_interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Sc
 /// Run the command in the pty interactively by proxying between its and termsnap's stdin and
 /// stdout. If Termsnap has a controlling terminal it is set to raw mode to pass all input through
 /// to the child pty.
-fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen> {
+fn interactive<I, O>(
+    parent_stdin: &mut I,
+    parent_stdout: &mut O,
+    pty: &mut Pty,
+    lines: u16,
+    columns: u16,
+) -> anyhow::Result<Screen>
+where
+    I: Read + AsFd,
+    O: Write + AsFd,
+{
     // VoidPtyWriter is used here to ignore report responses from the emulated terminal: requests
     // are proxied through to termsnap's controlling terminal instead.
     let mut term = Term::new(lines, columns, VoidPtyWriter);
@@ -243,13 +258,7 @@ fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen
     )
     .expect("failed to set signal handler");
 
-    let parent_stdin = std::io::stdin();
-    let parent_stdout = std::io::stdout();
-
     let screen = with_raw(parent_stdout, move |parent_stdout| {
-        let mut parent_stdin = parent_stdin.lock();
-        let mut parent_stdout = parent_stdout.lock();
-
         // buffers between parent and pty's stdin/stdout pairs
         let mut stdin_buf = Ringbuffer::<4096>::new();
         let mut stdout_buf = Ringbuffer::<4096>::new();
@@ -300,7 +309,7 @@ fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen
             };
 
             if poll_result[0] {
-                let _ = stdin_buf.read(&mut parent_stdin);
+                let _ = stdin_buf.read(parent_stdin);
             }
 
             if poll_result[1] {
@@ -317,7 +326,7 @@ fn interactive(pty: &mut Pty, lines: u16, columns: u16) -> anyhow::Result<Screen
             }
 
             if poll_result[3] {
-                match stdout_buf.write(&mut parent_stdout) {
+                match stdout_buf.write(parent_stdout) {
                     IoResult::Ok(bytes) | IoResult::EOF(bytes) => {
                         if bytes.len() > 0 {
                             parent_stdout.flush().unwrap();
@@ -349,7 +358,11 @@ fn from_read(read: &mut impl Read, lines: u16, columns: u16) -> anyhow::Result<S
 fn main() -> anyhow::Result<()> {
     let mut cli = Cli::parse();
     let out = cli.out.take();
-    let screen = run(cli)?;
+    let screen = run(
+        cli,
+        &mut std::io::stdin().lock(),
+        &mut std::io::stdout().lock(),
+    )?;
 
     let fonts = &[
         "ui-monospace",
@@ -372,7 +385,11 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run(cli: Cli) -> anyhow::Result<Screen> {
+fn run<I, O>(cli: Cli, parent_stdin: &mut I, parent_stdout: &mut O) -> anyhow::Result<Screen>
+where
+    I: Read + AsFd,
+    O: Write + AsFd,
+{
     if cli.interactive {
         if cli.out.is_none() {
             anyhow::bail!("`--interactive` is set but no SVG output file is specified in `--out`. See `termsnap --help`.");
@@ -382,11 +399,11 @@ fn run(cli: Cli) -> anyhow::Result<Screen> {
             eprintln!("Warning: Setting `--lines` and `--columns` has no effect when `--interactive` is set");
         }
 
-        if !std::io::stdin().is_terminal() {
+        if !parent_stdin.as_fd().is_terminal() {
             eprintln!("Warning: `--interactive` is set, but stdin is not a tty")
         }
 
-        if !std::io::stdout().is_terminal() {
+        if !parent_stdin.as_fd().is_terminal() {
             eprintln!("Warning: `--interactive` is set, but stdout is not a tty")
         }
     }
@@ -444,19 +461,17 @@ fn run(cli: Cli) -> anyhow::Result<Screen> {
             .unwrap();
 
             if cli.interactive {
-                interactive(&mut pty, lines, columns)?
+                interactive(parent_stdin, parent_stdout, &mut pty, lines, columns)?
             } else {
-                non_interactive(&mut pty, lines, columns)?
+                non_interactive(parent_stdin, &mut pty, lines, columns)?
             }
         }
         None => {
-            let stdin = std::io::stdin();
-            if stdin.is_terminal() {
+            if parent_stdin.as_fd().is_terminal() {
                 anyhow::bail!("No command given to execute. See 'termsnap --help'. To use Termsnap without it executing a command, you can pipe data into Termsnap.");
             }
 
-            let mut stdin = stdin.lock();
-            from_read(&mut stdin, lines, columns)?
+            from_read(parent_stdin, lines, columns)?
         }
     };
 
