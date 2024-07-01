@@ -1,3 +1,28 @@
+//! In-memory emulation of ANSI-escaped terminal data and rendering emulated terminal screens to
+//! SVG files.
+//!
+//! ```rust
+//! use termsnap_lib::{Term, VoidPtyWriter};
+//!
+//! // Create a new terminal emulator and process some bytes.
+//! let mut term = Term::new(24, 80, VoidPtyWriter);
+//! for byte in b"a line of \x1B[32mcolored\x1B[0m terminal data" {
+//!     term.process(*byte);
+//! }
+//!
+//! // Create a snapshot of the terminal screen grid.
+//! let screen = term.current_screen();
+//!
+//! let text: String = screen.cells().map(|c| c.c).collect();
+//! assert_eq!(text.trim(), "a line of colored terminal data");
+//!
+//! assert_eq!(&format!("{}", screen.get(0, 0).unwrap().fg), "#839496");
+//! assert_eq!(&format!("{}", screen.get(0, 10).unwrap().fg), "#859900");
+//!
+//! // Render the screen to SVG.
+//! println!("{}", screen.to_svg(&[]));
+//! ```
+
 #[forbid(unsafe_code)]
 use std::fmt::{Display, Write};
 
