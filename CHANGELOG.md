@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.1] - 2024-07-01
+
+### Bug Fixes
+- escape ampersands in text
+([daba56b](https://github.com/tomcur/termsnap/commit/daba56b69bc6b9fedaab5bd05f7ba12d09beb91a))
+
+
+### Documentation
+- *(lib)* add usage example
+([9befca8](https://github.com/tomcur/termsnap/commit/9befca8f3584e882a5b7727bf2c149529001e77e))
+
+
+### Other
+- generate examples
+([343bd55](https://github.com/tomcur/termsnap/commit/343bd5585da81782bab799549da43f1a3a75c9fd))
+- format
+([407dcba](https://github.com/tomcur/termsnap/commit/407dcba62f699cda599a38dbb90c200ae4f05799))
+
+
 ## [0.2.0] - 2024-07-01
 
 ### Breaking

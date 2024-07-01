@@ -1,6 +1,6 @@
 [package]
 name = "termsnap"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Create SVGs from terminal output"
 keywords = ["terminal", "screenshot", "ansi", "svg", "vector-graphics"]
@@ -24,4 +24,4 @@ clap = { version = "4.5.7", features = ["derive"] }
 rustix = { version = "0.38.34", features = ["event", "fs", "termios"] }
 signal-hook = "0.3.17"
 
-termsnap-lib = { path = "./termsnap-lib", version = "0.2.0" }
+termsnap-lib = { path = "./termsnap-lib", version = "0.2.1" }
