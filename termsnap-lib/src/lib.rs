@@ -357,7 +357,8 @@ impl Screen {
                 }
 
                 // write text
-                let mut text_line = TextLine::with_capacity(usize::from(*columns).next_power_of_two());
+                let mut text_line =
+                    TextLine::with_capacity(usize::from(*columns).next_power_of_two());
                 for y in 0..*lines {
                     let idx = self.screen.idx(y, 0);
                     let cell = &cells[idx];
