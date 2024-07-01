@@ -217,7 +217,8 @@ fn fmt_text(
                 }
             }
             // escape tag opening
-            '<' => f.write_str("&#x3C;")?,
+            '<' => f.write_str("&lt;")?,
+            '&' => f.write_str("&amp;")?,
             c => f.write_char(c)?,
         }
 
