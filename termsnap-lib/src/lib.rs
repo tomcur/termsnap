@@ -23,7 +23,7 @@
 //! println!("{}", screen.to_svg(&[]));
 //! ```
 
-#[forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 use std::fmt::{Display, Write};
 
 use alacritty_terminal::{
