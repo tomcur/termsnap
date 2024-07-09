@@ -1,4 +1,4 @@
-#[forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 use std::{
     cell::RefCell,
     collections::{HashMap, VecDeque},
@@ -43,7 +43,7 @@ fn with_raw<F: AsFd, R>(mut fd: F, f: impl FnOnce(&mut F) -> R) -> R {
     }
     let r = f(&mut fd);
     if let Ok(ref orig_attrs) = orig_attrs {
-        termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, &orig_attrs)
+        termios::tcsetattr(fd.as_fd(), termios::OptionalActions::Now, orig_attrs)
             .expect("could not set terminal attributes");
     }
     r
@@ -442,7 +442,7 @@ where
                 &alacritty_terminal::tty::Options {
                     shell: Some(alacritty_terminal::tty::Shell::new(
                         command,
-                        cli.args.unwrap_or(vec![]),
+                        cli.args.unwrap_or_default(),
                     )),
                     working_directory: None,
                     hold: false,
@@ -455,8 +455,8 @@ where
                     },
                 },
                 alacritty_terminal::event::WindowSize {
-                    num_lines: lines.into(),
-                    num_cols: columns.into(),
+                    num_lines: lines,
+                    num_cols: columns,
                     cell_width: 1,
                     cell_height: 1,
                 },

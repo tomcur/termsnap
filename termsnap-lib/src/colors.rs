@@ -128,13 +128,8 @@ pub(crate) fn most_common_color(screen: &Screen) -> Rgb {
         }
     }
 
+    #[derive(Default)]
     struct NoHashHasher(u64);
-
-    impl Default for NoHashHasher {
-        fn default() -> Self {
-            NoHashHasher(0)
-        }
-    }
 
     impl Hasher for NoHashHasher {
         fn finish(&self) -> u64 {

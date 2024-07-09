@@ -4,8 +4,8 @@ use rustix::event::{poll as rustix_poll, PollFd};
 /// Block until any of the [PollFd]s is satisfied. Returns an array with the [PollFd]s that had
 /// events (the result array's order is equal to the input order). If any [PollFd] is [None], it is
 /// ignored and its result is `false`.
-pub fn poll<'fd, const C: usize>(
-    mut poll_fds: [Option<PollFd<'fd>>; C],
+pub fn poll<const C: usize>(
+    mut poll_fds: [Option<PollFd<'_>>; C],
     timeout: Option<std::time::Duration>,
 ) -> std::io::Result<[bool; C]> {
     let mut polls = ArrayVec::<_, C>::new();
