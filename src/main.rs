@@ -88,6 +88,14 @@ struct Cli {
     #[arg(short, long)]
     columns: Option<u16>,
 
+    /// The value of the TERM environment variable to pass to the child process. This defaults to
+    /// "linux". You can try setting this to "alacritty" or "xterm-256color" to hint to programs to
+    /// use more terminal features.
+    ///
+    /// See also `man terminfo`.
+    #[arg(short, long)]
+    term: Option<String>,
+
     /// The command to run. Its output will be turned into an SVG. If this argument is missing and
     /// Termsnap's STDIN is not a TTY, data on STDIN is interpreted by the terminal emulator and
     /// the result rendered.
@@ -450,7 +458,12 @@ where
                         let mut env = HashMap::new();
                         env.insert("LINES".to_owned(), lines.to_string());
                         env.insert("COLUMNS".to_owned(), columns.to_string());
-                        env.insert("TERM".to_owned(), "linux".to_owned());
+                        // TODO: if we're running interactively, perhaps TERM should be defaulted
+                        // to that of the controlling terminal
+                        env.insert(
+                            "TERM".to_owned(),
+                            cli.term.unwrap_or_else(|| "linux".to_owned()),
+                        );
                         env
                     },
                 },
