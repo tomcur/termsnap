@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0] - 2024-07-16
+
+### Features
+- allow rendering terminal screens just prior to clearing
+([59c3bef](https://github.com/tomcur/termsnap/commit/59c3bef01c743ce53d2f3c1e8ef1fa7417af4f68))
+- allow specifying child's TERM environment variable
+([22da2c1](https://github.com/tomcur/termsnap/commit/22da2c1029edd20d48c4edb55f25bc07fc1832b2))
+- *(lib)* allow inspecting Term just prior to applying some ANSI signals
+([7012f8d](https://github.com/tomcur/termsnap/commit/7012f8d83b46d0db58896219e4f2551ae2ebb8ad))
+
+
+### Documentation
+- use xterm-256color in example for better compatibility across systems
+([d685f20](https://github.com/tomcur/termsnap/commit/d685f2005f66e19919bbfad25a6a778b508eec20))
+- use full lines/columns argument name in examples
+([b30e27b](https://github.com/tomcur/termsnap/commit/b30e27b62fcc3bb5ed9c4c0b2d232cd24cee4ff6))
+
+
+### Refactor
+- make name of generic parameter consistent
+([9579b54](https://github.com/tomcur/termsnap/commit/9579b543b9ec5fbadd1816b85ae80bec6c5d3e2e))
+- address clippy warnings
+([f91cc82](https://github.com/tomcur/termsnap/commit/f91cc827e0bdbf2d52ef658549e41e68e76c2d95))
+
+
 ## [0.2.1] - 2024-07-01
 
 ### Bug Fixes
