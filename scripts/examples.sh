@@ -31,7 +31,7 @@ termsnap -o ./media/tokei.svg --lines 22 --columns 80 -- tokei
 # On exit, for some terminals, Neovim clears the terminal screen by swapping
 # back to the main terminal screen buffer. The `--render-before-clear` argument
 # renders the terminal screen as it was just prior to that swap occurring.
-termsnap -o ./media/nvim.svg --lines 12 --columns 60 --term alacritty --render-before-clear -- nvim --clean ./scripts/example.py <<EOF
+termsnap -o ./media/nvim.svg --lines 12 --columns 60 --term xterm-256color --render-before-clear -- nvim --clean ./scripts/example.py <<EOF
 :set number
 :syntax enable
 :q
