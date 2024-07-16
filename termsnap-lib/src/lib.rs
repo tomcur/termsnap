@@ -474,10 +474,10 @@ impl<W: PtyWriter> alacritty_terminal::event::EventListener for EventProxy<W> {
 }
 
 /// An in-memory terminal emulator.
-pub struct Term<Ev: PtyWriter> {
+pub struct Term<W: PtyWriter> {
     lines: u16,
     columns: u16,
-    term: AlacrittyTerm<EventProxy<Ev>>,
+    term: AlacrittyTerm<EventProxy<W>>,
     processor: vte::ansi::Processor<vte::ansi::StdSyncHandler>,
 }
 
