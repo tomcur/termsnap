@@ -32,7 +32,7 @@ session.
 ### Cowsay
 
 ```bash
-$ termsnap -l 9 -c 28 -- cowsay Hello, world
+$ termsnap --lines 9 --columns 28 -- cowsay Hello, world
 ```
 
 ![Termsnap output of the cowsay command saying "hello world"](./media/cow.svg)
@@ -43,7 +43,7 @@ $ termsnap -l 9 -c 28 -- cowsay Hello, world
 # On exit, for some terminals, Neovim clears the terminal screen by swapping
 # back to the main terminal screen buffer. The `--render-before-clear` argument
 # renders the terminal screen as it was just prior to that swap occurring.
-$ termsnap -l 12 -c 60 --term alacritty --render-before-clear -- nvim --clean ./scripts/example.py <<EOF
+$ termsnap --lines 12 --columns 60 --term alacritty --render-before-clear -- nvim --clean ./scripts/example.py <<EOF
 :set number
 :syntax enable
 :q
@@ -61,7 +61,7 @@ $ (
     sleep 0.05
     echo -ne "for x in {16..231}; do printf \"\\\e[48;5;\${x}m%03d\\\e[0m \" \$x; done\r"
     sleep 0.05
-) | termsnap -l 16 -c 72 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
+) | termsnap --lines 16 --columns 72 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
 ```
 
 ![Termsnap output of a dump of indexed terminal colors](./media/colors.svg)
@@ -75,7 +75,7 @@ $ (
     sleep 0.05
     printf "tty\r"
     sleep 0.05
-) | termsnap -l 12 -c 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
+) | termsnap --lines 12 --columns 60 -- bash --noprofile --rcfile "$PWD/scripts/inputrc"
 ```
 
 ![Termsnap output of some tty commands](./media/tty.svg)
@@ -83,7 +83,7 @@ $ (
 ### Tokei
 
 ```bash
-$ termsnap -l 22 -c 80 -- tokei
+$ termsnap --lines 22 --columns 80 -- tokei
 ```
 
 ![Termsnap output of the Tokei lines of code counter](./media/tokei.svg)
