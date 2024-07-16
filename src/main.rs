@@ -96,6 +96,14 @@ struct Cli {
     #[arg(short, long)]
     term: Option<String>,
 
+    /// Render the terminal screen as it was just prior to the child process's last ANSI signal to
+    /// clear or swap the terminal screen buffer. This is useful, for example, when a process that
+    /// is exiting requests the terminal to clear its screen.
+    ///
+    /// If the child process does not emit such a signal, this argument has no effect.
+    #[arg(long)]
+    render_before_clear: bool,
+
     /// The command to run. Its output will be turned into an SVG. If this argument is missing and
     /// Termsnap's STDIN is not a TTY, data on STDIN is interpreted by the terminal emulator and
     /// the result rendered.
@@ -121,6 +129,7 @@ fn non_interactive<I>(
     pty: &mut Pty,
     lines: u16,
     columns: u16,
+    render_before_clear: bool,
 ) -> anyhow::Result<Screen>
 where
     I: Read + AsFd,
@@ -149,6 +158,8 @@ where
     }
     let mut eot_state = EotState::None;
 
+    // The terminal screen just prior to clearing (if `render_before_clear`).
+    let mut screen_before_clear = None;
     loop {
         if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event() {
             break;
@@ -220,7 +231,13 @@ where
             match pty_stdout.read(&mut stdout_buf) {
                 Ok(read) => {
                     for &byte in &stdout_buf[..read] {
-                        term.process(byte)
+                        if render_before_clear {
+                            term.process_with_callback(byte, |term, _signal| {
+                                screen_before_clear = Some(term.current_screen());
+                            })
+                        } else {
+                            term.process(byte)
+                        }
                     }
                 }
                 Err(_err) => {}
@@ -238,7 +255,11 @@ where
         }
     }
 
-    Ok(term.current_screen())
+    if let Some(screen) = screen_before_clear {
+        Ok(screen)
+    } else {
+        Ok(term.current_screen())
+    }
 }
 
 /// Run the command in the pty interactively by proxying between its and termsnap's stdin and
@@ -250,6 +271,7 @@ fn interactive<I, O>(
     pty: &mut Pty,
     lines: u16,
     columns: u16,
+    render_before_clear: bool,
 ) -> anyhow::Result<Screen>
 where
     I: Read + AsFd,
@@ -271,6 +293,8 @@ where
         let mut stdin_buf = Ringbuffer::<4096>::new();
         let mut stdout_buf = Ringbuffer::<4096>::new();
 
+        // The terminal screen just prior to clearing (if `render_before_clear`).
+        let mut screen_before_clear = None;
         loop {
             if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event()
             {
@@ -324,7 +348,13 @@ where
                 let pty_stdout = pty.reader();
                 let res = stdout_buf.read(pty_stdout);
                 for byte in res.bytes() {
-                    term.process(byte);
+                    if render_before_clear {
+                        term.process_with_callback(byte, |term, _signal| {
+                            screen_before_clear = Some(term.current_screen());
+                        })
+                    } else {
+                        term.process(byte)
+                    }
                 }
             }
 
@@ -345,7 +375,11 @@ where
             }
         }
 
-        anyhow::Ok(term.current_screen())
+        if let Some(screen) = screen_before_clear {
+            Ok(screen)
+        } else {
+            Ok(term.current_screen())
+        }
     })?;
 
     Ok(screen)
@@ -478,9 +512,22 @@ where
             .unwrap();
 
             if cli.interactive {
-                interactive(parent_stdin, parent_stdout, &mut pty, lines, columns)?
+                interactive(
+                    parent_stdin,
+                    parent_stdout,
+                    &mut pty,
+                    lines,
+                    columns,
+                    cli.render_before_clear,
+                )?
             } else {
-                non_interactive(parent_stdin, &mut pty, lines, columns)?
+                non_interactive(
+                    parent_stdin,
+                    &mut pty,
+                    lines,
+                    columns,
+                    cli.render_before_clear,
+                )?
             }
         }
         None => from_read(parent_stdin, lines, columns)?,
