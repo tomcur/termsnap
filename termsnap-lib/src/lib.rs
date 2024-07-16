@@ -35,7 +35,10 @@ use alacritty_terminal::{
     vte::{self, ansi::Processor},
 };
 
+mod ansi;
 mod colors;
+
+pub use ansi::AnsiSignal;
 use colors::Colors;
 
 const FONT_ASPECT_RATIO: f32 = 0.6;
@@ -478,7 +481,7 @@ pub struct Term<W: PtyWriter> {
     lines: u16,
     columns: u16,
     term: AlacrittyTerm<EventProxy<W>>,
-    processor: vte::ansi::Processor<vte::ansi::StdSyncHandler>,
+    processor: Option<vte::ansi::Processor<vte::ansi::StdSyncHandler>>,
 }
 
 impl<W: PtyWriter> Term<W> {
@@ -502,13 +505,34 @@ impl<W: PtyWriter> Term<W> {
             lines,
             columns,
             term,
-            processor: Processor::new(),
+            processor: Some(Processor::new()),
         }
     }
 
     /// Process one byte of ANSI-escaped terminal data.
     pub fn process(&mut self, byte: u8) {
-        self.processor.advance(&mut self.term, byte);
+        self.processor
+            .as_mut()
+            .expect("unreachable")
+            .advance(&mut self.term, byte);
+    }
+
+    /// Process one byte of ANSI-escaped terminal data. Some ANSI signals will trigger callback
+    /// `cb` to be called with a reference to the terminal and the signal that triggered the call,
+    /// right before applying the result of the ANSI signal to the terminal. This allows grabbing a
+    /// snapshot of the the terminal screen contents before application of the signal.
+    ///
+    /// See also [AnsiSignal].
+    pub fn process_with_callback(&mut self, byte: u8, mut cb: impl FnMut(&Self, AnsiSignal)) {
+        let mut processor = self.processor.take().expect("unreachable");
+
+        let mut handler = ansi::HandlerWrapper {
+            term: self,
+            cb: &mut cb,
+        };
+
+        processor.advance(&mut handler, byte);
+        self.processor = Some(processor);
     }
 
     /// Resize the terminal screen to the specified dimension.
