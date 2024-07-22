@@ -399,8 +399,7 @@ impl Screen {
                 }
 
                 f.write_str(
-                    "
-</g>
+                    "</g>
 </svg>",
                 )?;
 
