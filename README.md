@@ -106,10 +106,10 @@ Run using Nix flakes:
 
 ```bash
 # Run ls
-$ nix run github:tomcur/termsnap -- --columns 80 --lines 36 -- ls --color=always -l
+$ nix run nixpkgs#termsnap -- --columns 80 --lines 36 -- ls --color=always -l
 
 # Run an interactive bash session
-$ nix run github:tomcur/termsnap -- --interactive --out ./interactive-bash.svg -- bash
+$ nix run nixpkgs#termsnap -- --interactive --out ./interactive-bash.svg -- bash
 ```
 
 ## A note on fonts
