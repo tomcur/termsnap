@@ -1,20 +1,19 @@
-<svg viewBox="0 0 36 12" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 432.00003 172.8" xmlns="http://www.w3.org/2000/svg">
 <style>
   .screen {
-    font-family: "ui-monospace", "Consolas", "Liberation Mono", "Source Code Pro", monospace;
-    font-size: 1px;
+    font-family: "ui-monospace", "Liberation Mono", "Consolas", "Menlo", "Source Code Pro", monospace;
+    font-size: 12px;
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="36" height="12" style="fill: #002b36;" />
-<text x="0" y="0.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
-<text x="1.2" y="0.75" textLength="4.2000003" style="fill: #839496;">echo $-</text>
-<text x="0" y="1.75" textLength="3" style="fill: #839496;">imBHs</text>
-<text x="0" y="2.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
-<text x="1.2" y="2.75" textLength="1.8000001" style="fill: #839496;">tty</text>
-<text x="0" y="3.75" textLength="6" style="fill: #839496;">/dev/pts/5</text>
-<text x="0" y="4.75" textLength="0.6" style="fill: #859900; font-weight: 600;">$</text>
-<text x="0" y="5.75" textLength="2.4" style="fill: #839496;">exit</text>
-
+<rect x="0" y="0" width="432.00003" height="172.8" style="fill: #002b36;" />
+<text x="0" y="10.8" textLength="7.2000003" style="fill: #859900; font-weight: 600;">$</text>
+<text x="14.400001" y="10.8" textLength="50.4" style="fill: #839496;">echo $-</text>
+<text x="0" y="25.2" textLength="36" style="fill: #839496;">imBHs</text>
+<text x="0" y="39.600002" textLength="7.2000003" style="fill: #859900; font-weight: 600;">$</text>
+<text x="14.400001" y="39.600002" textLength="21.6" style="fill: #839496;">tty</text>
+<text x="0" y="54.000004" textLength="72" style="fill: #839496;">/dev/pts/9</text>
+<text x="0" y="68.4" textLength="7.2000003" style="fill: #859900; font-weight: 600;">$</text>
+<text x="0" y="82.8" textLength="28.800001" style="fill: #839496;">exit</text>
 </g>
 </svg>

@@ -1,20 +1,19 @@
-<svg viewBox="0 0 16.800001 9" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 201.6 129.6" xmlns="http://www.w3.org/2000/svg">
 <style>
   .screen {
-    font-family: "ui-monospace", "Consolas", "Liberation Mono", "Source Code Pro", monospace;
-    font-size: 1px;
+    font-family: "ui-monospace", "Liberation Mono", "Consolas", "Menlo", "Source Code Pro", monospace;
+    font-size: 12px;
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="16.800001" height="9" style="fill: #002b36;" />
-<text x="0.6" y="0.75" textLength="8.400001" style="fill: #839496;">______________</text>
-<text x="0" y="1.75" textLength="9.6" style="fill: #839496;">&lt; Hello, world ></text>
-<text x="0.6" y="2.75" textLength="8.400001" style="fill: #839496;">--------------</text>
-<text x="4.8" y="3.75" textLength="4.8" style="fill: #839496;">\ &#160;&#160;^__^</text>
-<text x="5.4" y="4.75" textLength="9" style="fill: #839496;">\ &#160;(oo)\_______</text>
-<text x="7.2000003" y="5.75" textLength="9.6" style="fill: #839496;">(__)\ &#160;&#160;&#160;&#160;&#160;&#160;)\/\</text>
-<text x="9.6" y="6.75" textLength="5.4" style="fill: #839496;">||----w |</text>
-<text x="9.6" y="7.75" textLength="5.4" style="fill: #839496;">|| &#160;&#160;&#160;&#160;||</text>
-
+<rect x="0" y="0" width="201.6" height="129.6" style="fill: #002b36;" />
+<text x="7.2000003" y="10.8" textLength="100.8" style="fill: #839496;">______________</text>
+<text x="0" y="25.2" textLength="115.200005" style="fill: #839496;">&lt; Hello, world ></text>
+<text x="7.2000003" y="39.600002" textLength="100.8" style="fill: #839496;">--------------</text>
+<text x="57.600002" y="54.000004" textLength="57.600002" style="fill: #839496;">\ &#160;&#160;^__^</text>
+<text x="64.8" y="68.4" textLength="108.00001" style="fill: #839496;">\ &#160;(oo)\_______</text>
+<text x="86.4" y="82.8" textLength="115.200005" style="fill: #839496;">(__)\ &#160;&#160;&#160;&#160;&#160;&#160;)\/\</text>
+<text x="115.200005" y="97.200005" textLength="64.8" style="fill: #839496;">||----w |</text>
+<text x="115.200005" y="111.600006" textLength="64.8" style="fill: #839496;">|| &#160;&#160;&#160;&#160;||</text>
 </g>
 </svg>

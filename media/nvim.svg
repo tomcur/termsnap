@@ -1,34 +1,33 @@
-<svg viewBox="0 0 36 12" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 432.00003 172.8" xmlns="http://www.w3.org/2000/svg">
 <style>
   .screen {
-    font-family: "ui-monospace", "Consolas", "Liberation Mono", "Source Code Pro", monospace;
-    font-size: 1px;
+    font-family: "ui-monospace", "Liberation Mono", "Consolas", "Menlo", "Source Code Pro", monospace;
+    font-size: 12px;
   }
 </style>
 <g class="screen">
-<rect x="0" y="0" width="36" height="12" style="fill: #14161b;" />
-<rect x="0" y="10" width="36" height="1" style="fill: #c4c6cd;" />
-<text x="1.2" y="0.75" textLength="0.6" style="fill: #4f5258;">1</text>
-<text x="2.4" y="0.75" textLength="13.200001" style="fill: #9b9ea4;">#!/usr/bin/env python3</text>
-<text x="1.2" y="1.75" textLength="0.6" style="fill: #4f5258;">2</text>
-<text x="1.2" y="2.75" textLength="0.6" style="fill: #4f5258;">3</text>
-<text x="2.4" y="2.75" textLength="1.2" style="fill: #e0e2ea; font-weight: 600;">if</text>
-<text x="4.2000003" y="2.75" textLength="6.6000004" style="fill: #e0e2ea;">__name__ ==</text>
-<text x="11.400001" y="2.75" textLength="6" style="fill: #b3f6c0;">"__main__"</text>
-<text x="17.400002" y="2.75" textLength="0.6" style="fill: #e0e2ea;">:</text>
-<text x="1.2" y="3.75" textLength="0.6" style="fill: #4f5258;">4</text>
-<text x="4.8" y="3.75" textLength="3" style="fill: #8cf8f7;">print</text>
-<text x="7.8" y="3.75" textLength="0.6" style="fill: #e0e2ea;">(</text>
-<text x="8.400001" y="3.75" textLength="8.400001" style="fill: #b3f6c0;">"Hello world!"</text>
-<text x="16.800001" y="3.75" textLength="0.6" style="fill: #e0e2ea;">)</text>
-<text x="0" y="4.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="5.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="6.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="7.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="8.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="9.75" textLength="0.6" style="fill: #4f5258;">~</text>
-<text x="0" y="10.75" textLength="36" style="fill: #2c2e33;">./scripts/example.py &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;1,1 &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;All</text>
-<text x="0" y="11.75" textLength="1.2" style="fill: #e0e2ea;">:q</text>
-
+<rect x="0" y="0" width="432.00003" height="172.8" style="fill: #14161b;" />
+<rect x="0" y="144" width="432.00003" height="14.400001" style="fill: #c4c6cd;" />
+<text x="14.400001" y="10.8" textLength="7.2000003" style="fill: #4f5258;">1</text>
+<text x="28.800001" y="10.8" textLength="158.40001" style="fill: #9b9ea4;">#!/usr/bin/env python3</text>
+<text x="14.400001" y="25.2" textLength="7.2000003" style="fill: #4f5258;">2</text>
+<text x="14.400001" y="39.600002" textLength="7.2000003" style="fill: #4f5258;">3</text>
+<text x="28.800001" y="39.600002" textLength="14.400001" style="fill: #e0e2ea; font-weight: 600;">if</text>
+<text x="50.4" y="39.600002" textLength="79.200005" style="fill: #e0e2ea;">__name__ ==</text>
+<text x="136.8" y="39.600002" textLength="72" style="fill: #b3f6c0;">"__main__"</text>
+<text x="208.8" y="39.600002" textLength="7.2000003" style="fill: #e0e2ea;">:</text>
+<text x="14.400001" y="54.000004" textLength="7.2000003" style="fill: #4f5258;">4</text>
+<text x="57.600002" y="54.000004" textLength="36" style="fill: #8cf8f7;">print</text>
+<text x="93.600006" y="54.000004" textLength="7.2000003" style="fill: #e0e2ea;">(</text>
+<text x="100.8" y="54.000004" textLength="100.8" style="fill: #b3f6c0;">"Hello world!"</text>
+<text x="201.6" y="54.000004" textLength="7.2000003" style="fill: #e0e2ea;">)</text>
+<text x="0" y="68.4" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="82.8" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="97.200005" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="111.600006" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="126.00001" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="140.4" textLength="7.2000003" style="fill: #4f5258;">~</text>
+<text x="0" y="154.8" textLength="432.00003" style="fill: #2c2e33;">./scripts/example.py &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;1,1 &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;All</text>
+<text x="0" y="169.2" textLength="14.400001" style="fill: #e0e2ea;">:q</text>
 </g>
 </svg>
