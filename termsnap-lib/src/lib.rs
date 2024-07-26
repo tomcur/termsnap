@@ -2,7 +2,7 @@
 //! SVG files.
 //!
 //! ```rust
-//! use termsnap_lib::{Term, VoidPtyWriter};
+//! use termsnap_lib::{FontMetrics, Term, VoidPtyWriter};
 //!
 //! // Create a new terminal emulator and process some bytes.
 //! let mut term = Term::new(24, 80, VoidPtyWriter);
@@ -20,7 +20,7 @@
 //! assert_eq!(&format!("{}", screen.get(0, 10).unwrap().fg), "#859900");
 //!
 //! // Render the screen to SVG.
-//! println!("{}", screen.to_svg(&[]));
+//! println!("{}", screen.to_svg(&[], FontMetrics::DEFAULT));
 //! ```
 
 #![forbid(unsafe_code)]
@@ -67,11 +67,13 @@ impl FontMetrics {
     /// or Menlo. If this is not accurate, it will be noticeable as overlap or gaps between box
     /// drawing characters.
     ///
-    /// ```
-    /// units_per_em: 1000
-    /// advance: 600.0
-    /// line_height: 1200.0
-    /// descent: 300.0
+    /// ```norun
+    /// FontMetrics {
+    ///     units_per_em: 1000,
+    ///     advance: 600.0,
+    ///     line_height: 1200.0,
+    ///     descent: 300.0,
+    /// }
     /// ```
     pub const DEFAULT: FontMetrics = FontMetrics {
         units_per_em: 1000,
