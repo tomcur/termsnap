@@ -469,8 +469,9 @@ fn main() -> anyhow::Result<()> {
 
     let fonts = &[
         "ui-monospace",
-        "Consolas",
         "Liberation Mono",
+        "Consolas",
+        "Menlo",
         "Source Code Pro",
     ];
 
