@@ -41,8 +41,107 @@ mod colors;
 pub use ansi::AnsiSignal;
 use colors::Colors;
 
-const FONT_ASPECT_RATIO: f32 = 0.6;
-const FONT_ASCENT: f32 = 0.750;
+/// A sensible default font size, in case some renderers don't automatically scale up the SVG.
+const FONT_SIZE_PX: f32 = 12.;
+
+/// Metrics for rendering a monospaced font.
+#[derive(Clone, Copy, Debug)]
+pub struct FontMetrics {
+    /// The number of font units per Em. To scale the font to a specific size, the font metrics are
+    /// scaled relative to this unit. For example, the line height in pixels for a font at size
+    /// 12px would be:
+    ///
+    /// `line_height / units_per_em * 12`
+    pub units_per_em: u16,
+    /// The amount of horizontal advance between characters.
+    pub advance: f32,
+    /// Height between the baselines of two lines of text.
+    pub line_height: f32,
+    /// Space below the text baseline. This is the distance between the text baseline of a line
+    /// and the top of the next line.
+    pub descent: f32,
+}
+
+impl FontMetrics {
+    /// Font metrics that should work for fonts that are similar to, e.g., Liberation mono, Consolas
+    /// or Menlo. If this is not accurate, it will be noticeable as overlap or gaps between box
+    /// drawing characters.
+    ///
+    /// ```
+    /// units_per_em: 1000
+    /// advance: 600.0
+    /// line_height: 1200.0
+    /// descent: 300.0
+    /// ```
+    pub const DEFAULT: FontMetrics = FontMetrics {
+        units_per_em: 1000,
+        advance: 600.,
+        line_height: 1200.,
+        descent: 300.,
+
+        // Metrics of some fonts:
+        // - Liberation mono:
+        //     units_per_em: 2048,  1.000
+        //     advance: 1229.,      0.600
+        //     line_height: 2320.,  1.133
+        //     descent: 615.,       0.300
+        //
+        // - Consolas:
+        //     units_per_em: 2048,  1.000
+        //     advance: 1226,       0.599
+        //     line_height: 2398,   1.171
+        //     descent: 514,        0.251
+        //
+        // - Menlo:
+        //     units_per_em: 2048,  1.000
+        //     advance: 1233,       0.602
+        //     line_height: 2384,   1.164
+        //     descent: 483,        0.236
+        //
+        // - Source Code Pro
+        //     units_per_em: 1000,  1.000
+        //     advance: 600.,       0.600
+        //     line_height: 1257.,  1.257
+        //     descent: 273.,       0.273
+
+        // - Iosevka extended
+        //     units_per_em: 1000,  1.000
+        //     advance: 600.,       0.600
+        //     line_height: 1250.,  1.250
+        //     descent: 285.,       0.285
+    };
+}
+
+impl Default for FontMetrics {
+    fn default() -> Self {
+        FontMetrics::DEFAULT
+    }
+}
+
+/// Metrics for a font at a specific font size. Calculated from [FontMetrics].
+#[derive(Clone, Copy)]
+struct CalculatedFontMetrics {
+    /// The amount of horizontal advance between characters.
+    advance: f32,
+    /// Height of a line of text. Lines of text directly touch each other, i.e., it is assumed
+    /// the text "leading" is 0.
+    line_height: f32,
+    /// Distance below the text baseline. This is the distance between the text baseline of a line
+    /// and the top of the next line.It is assumed there is no
+    descent: f32,
+}
+
+impl FontMetrics {
+    /// Get the font metrics at a specific font size.
+    fn at_font_size(self, font_size: f32) -> CalculatedFontMetrics {
+        let scale_factor = font_size / f32::from(self.units_per_em);
+        CalculatedFontMetrics {
+            advance: self.advance * scale_factor,
+            line_height: self.line_height * scale_factor,
+            descent: self.descent * scale_factor,
+        }
+    }
+}
 
 /// A color in the sRGB color space.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -162,14 +261,15 @@ fn fmt_rect(
     x1: u16,
     y1: u16,
     color: Rgb,
+    font_metrics: &CalculatedFontMetrics,
 ) -> std::fmt::Result {
     writeln!(
         f,
         r#"<rect x="{x}" y="{y}" width="{width}" height="{height}" style="fill: {color};" />"#,
-        x = f32::from(x0) * FONT_ASPECT_RATIO,
-        y = y0,
-        width = f32::from(x1 - x0 + 1) * FONT_ASPECT_RATIO,
-        height = y1 - y0 + 1,
+        x = f32::from(x0) * font_metrics.advance,
+        y = f32::from(y0) * font_metrics.line_height,
+        width = f32::from(x1 - x0 + 1) * font_metrics.advance,
+        height = f32::from(y1 - y0 + 1) * font_metrics.line_height,
         color = color,
     )
 }
@@ -180,14 +280,15 @@ fn fmt_text(
     y: u16,
     text: &TextLine,
     style: &TextStyle,
+    font_metrics: &CalculatedFontMetrics,
 ) -> std::fmt::Result {
     let chars = text.chars();
-    let text_length = chars.len() as f32 * FONT_ASPECT_RATIO;
+    let text_length = chars.len() as f32 * font_metrics.advance;
     write!(
         f,
         r#"<text x="{x}" y="{y}" textLength="{text_length}" style="fill: {color};"#,
-        x = f32::from(x) * FONT_ASPECT_RATIO,
-        y = f32::from(y) + FONT_ASCENT,
+        x = f32::from(x) * font_metrics.advance,
+        y = f32::from(y + 1) * font_metrics.line_height - font_metrics.descent,
         color = style.fg,
     )?;
 
@@ -245,17 +346,24 @@ impl Screen {
     ///
     /// The SVG is generated once [std::fmt::Display::fmt] is called; cache the call's output if
     /// you want to use it multiple times.
-    pub fn to_svg<'s, 'f>(&'s self, fonts: &'f [&'f str]) -> impl Display + 's
+    pub fn to_svg<'s, 'f>(
+        &'s self,
+        fonts: &'f [&'f str],
+        font_metrics: FontMetrics,
+    ) -> impl Display + 's
     where
         'f: 's,
     {
         struct Svg<'s> {
             screen: &'s Screen,
             fonts: &'s [&'s str],
+            font_metrics: CalculatedFontMetrics,
         }
 
         impl<'s> Display for Svg<'s> {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let font_metrics = self.font_metrics;
+
                 let Screen {
                     lines,
                     columns,
@@ -265,8 +373,8 @@ impl Screen {
                 write!(
                     f,
                     r#"<svg viewBox="0 0 {} {}" xmlns="http://www.w3.org/2000/svg">"#,
-                    f32::from(self.screen.columns) * FONT_ASPECT_RATIO,
-                    lines,
+                    f32::from(*columns) * font_metrics.advance,
+                    f32::from(*lines) * font_metrics.line_height,
                 )?;
 
                 f.write_str(
@@ -282,10 +390,11 @@ impl Screen {
                     f.write_str("\", ")?;
                 }
 
-                f.write_str(
+                write!(
+                    f,
                     r#"monospace;
-    font-size: 1px;
-  }
+    font-size: {FONT_SIZE_PX}px;
+  }}
 </style>
 <g class="screen">
 "#,
@@ -299,6 +408,7 @@ impl Screen {
                     self.screen.columns().saturating_sub(1),
                     self.screen.lines().saturating_sub(1),
                     main_bg,
+                    &font_metrics,
                 )?;
 
                 // find background rectangles to draw by greedily flooding lines then flooding down columns
@@ -356,7 +466,7 @@ impl Screen {
                             }
                         }
 
-                        fmt_rect(f, x0, y0, end_x, end_y, bg)?;
+                        fmt_rect(f, x0, y0, end_x, end_y, bg, &font_metrics)?;
                     }
                 }
 
@@ -376,7 +486,7 @@ impl Screen {
 
                         if style_ != style {
                             if !text_line.is_empty() {
-                                fmt_text(f, start_x, y, &text_line, &style)?;
+                                fmt_text(f, start_x, y, &text_line, &style, &font_metrics)?;
                             }
                             text_line.clear();
                             style = style_;
@@ -393,7 +503,7 @@ impl Screen {
                     }
 
                     if !text_line.is_empty() {
-                        fmt_text(f, start_x, y, &text_line, &style)?;
+                        fmt_text(f, start_x, y, &text_line, &style, &font_metrics)?;
                         text_line.clear();
                     }
                 }
@@ -410,6 +520,7 @@ impl Screen {
         Svg {
             screen: self,
             fonts,
+            font_metrics: font_metrics.at_font_size(FONT_SIZE_PX),
         }
     }
 
