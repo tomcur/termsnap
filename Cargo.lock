@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "termsnap"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "alacritty_terminal",
  "anyhow",
@@ -501,7 +501,7 @@ dependencies = [
 
 [[package]]
 name = "termsnap-lib"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "alacritty_terminal",
 ]
