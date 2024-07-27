@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.4.0] - 2024-07-27
+
+### Breaking
+- [**breaking**] render SVG based on font metrics
+([3d1d52c](https://github.com/tomcur/termsnap/commit/3d1d52cea1ed2cdb42b11af1dec66b2190796934))
+
+
+### Bug Fixes
+- *(lib)* fix doctests
+([8d2a3cb](https://github.com/tomcur/termsnap/commit/8d2a3cbe2d569c1f3fb7cf3cb62e4c494a8bd6c1))
+- remove unnecessary newline in generated SVGs
+([0d24ace](https://github.com/tomcur/termsnap/commit/0d24ace83866a798ea822b881ecdd9956825e1a9))
+
+
+### Documentation
+- *(README)* add note about font metrics
+([0ef5040](https://github.com/tomcur/termsnap/commit/0ef504027457e553caff283bec23af4cd42de981))
+- *(README)* use nixpkgs for nix example
+([03393db](https://github.com/tomcur/termsnap/commit/03393dbe661ca1367deb78ebd8f738370a8550ff))
+
+
+### Refactor
+- Add Menlo to default font stack
+([7fb1fb1](https://github.com/tomcur/termsnap/commit/7fb1fb1d8cb50b841a6c238cb52fc8f0fdd911d3))
+
+
+### Other
+- regenerate examples
+([0719c1a](https://github.com/tomcur/termsnap/commit/0719c1a9cc4092dde0690783f22d10a7ae047066))
+
+
 ## [0.3.0] - 2024-07-16
 
 ### Features
