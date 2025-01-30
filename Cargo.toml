@@ -14,7 +14,7 @@ members = [
 ]
 
 [workspace.dependencies]
-alacritty_terminal = "0.24"
+alacritty_terminal = "0.24.1"
 
 [dependencies]
 alacritty_terminal = { workspace = true }
