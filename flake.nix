@@ -1,5 +1,5 @@
 {
-  description = "(Neo)vim perceptual color scheme compiler";
+  description = "Create SVGs from terminal output";
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
