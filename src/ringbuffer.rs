@@ -12,6 +12,7 @@ pub enum IoResult<'b> {
     EOF(Bytes<'b>),
     Err {
         bytes: Bytes<'b>,
+        #[expect(dead_code, reason = "may want to use the base io error later")]
         err: std::io::Error,
     },
 }
