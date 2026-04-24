@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.5.0] - 2026-04-24
+
+### Breaking
+- [**breaking**] bump alacritty_terminal to fix PTY file descriptor leak
+([bd52ab2](https://github.com/tomcur/termsnap/commit/bd52ab2d3d583c50ae7f099efa63f9e794f62826))
+
+
+### Refactor
+- expect dead code
+([f06befa](https://github.com/tomcur/termsnap/commit/f06befa3fcdc5ef5ccfe7bc04169a8ce2ef8d607))
+
+
+### Other
+- Bump input flakes
+([3859ddd](https://github.com/tomcur/termsnap/commit/3859ddd43ae58fc698b360d8ea7d4a43c7f48cdf))
+- track version, edition and license in workspace
+([39d9a76](https://github.com/tomcur/termsnap/commit/39d9a7601162f77b7c3e6be171c91d14bc7344f3))
+- correct flake description
+([13cb95c](https://github.com/tomcur/termsnap/commit/13cb95cf9fb52e7178f551ce755d79bb81f9f664))
+- bump input flakes
+([09d719a](https://github.com/tomcur/termsnap/commit/09d719ab252bc36d4ee8078958b4ab690beb93f4))
+- Honor color palette from terminal escape sequences
+([1e8c5d7](https://github.com/tomcur/termsnap/commit/1e8c5d7d17c41bc100efa02cf61b0cd93b677a65))
+
+
+
 ## [0.4.0] - 2024-07-27
 
 ### Breaking
