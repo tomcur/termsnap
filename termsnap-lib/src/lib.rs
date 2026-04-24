@@ -661,7 +661,8 @@ impl<W: PtyWriter> Term<W> {
     /// Get a snapshot of the current terminal screen.
     pub fn current_screen(&self) -> Screen {
         // ideally users can define their own colors
-        let colors = Colors::default();
+        let mut colors = Colors::default();
+        colors.overlay(self.term.colors());
 
         Screen {
             lines: self.lines,
@@ -687,6 +688,23 @@ pub fn emulate(lines: u16, columns: u16, ansi_sequence: &[u8]) -> Screen {
 
 #[cfg(test)]
 mod test {
+    use super::{Term, VoidPtyWriter};
+
+    #[test]
+    fn osc_color_override() {
+        // `OSC 4` redefines palette entry 1 ("red"), and `SGR 31` then sets that as the foreground
+        // color when writing "foo".
+        let seq: &[u8] = b"\x1b]4;1;rgb:ff/00/ff\x07\x1b[31mfoo\x1b[0m";
+
+        let mut term = Term::new(1, 4, VoidPtyWriter);
+        for &b in seq {
+            term.process(b);
+        }
+
+        let fg = term.current_screen().get(0, 0).unwrap().fg;
+        assert_eq!(format!("{fg}"), "#ff00ff");
+    }
+
     #[test]
     fn test() {
         let screen = super::emulate(24, 80, include_bytes!("./tests/ls.txt"));

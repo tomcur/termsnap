@@ -1,5 +1,5 @@
 use alacritty_terminal::{
-    term::color::Colors as AlacrittyColors,
+    term::color::{Colors as AlacrittyColors, COUNT as ALACRITTY_COLOR_COUNT},
     vte::ansi::{Color, NamedColor, Rgb as AlacrittyRgb},
 };
 
@@ -37,6 +37,20 @@ impl Default for Colors {
         fill_gray_ramp(&mut colors);
 
         Colors { colors }
+    }
+}
+
+impl Colors {
+    /// Overlay colors in `src` on `self`.
+    ///
+    /// This writes every `Some` entry in `src` into the corresponding slot of `self`. Entries where
+    /// `src` is `None` are untouched.
+    pub(crate) fn overlay(&mut self, src: &AlacrittyColors) {
+        for idx in 0..ALACRITTY_COLOR_COUNT {
+            if let Some(rgb) = src[idx] {
+                self.colors[idx] = Some(rgb);
+            }
+        }
     }
 }
 
