@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 use std::{
     cell::RefCell,
-    collections::{HashMap, VecDeque},
+    collections::VecDeque,
     io::{IsTerminal, Read, Write},
     os::fd::AsFd,
     path::PathBuf,
@@ -9,11 +9,8 @@ use std::{
     time::Instant,
 };
 
-use alacritty_terminal::{
-    event::OnResize,
-    tty::{EventedPty, EventedReadWrite, Pty},
-};
 use clap::{Args, Parser};
+use teletypewriter::{ChildEvent, EventedPty, ProcessReadWrite, Pty, WinsizeBuilder};
 use rustix::{
     event::{PollFd, PollFlags},
     termios,
@@ -190,7 +187,7 @@ where
     // The terminal screen just prior to clearing (if `render_before_clear`).
     let mut screen_before_clear = None;
     loop {
-        if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event() {
+        if let Some(ChildEvent::Exited) = pty.next_child_event() {
             break;
         }
 
@@ -223,12 +220,14 @@ where
             }
         }
 
+        let pty_file = pty.reader();
+        let pty_fd = pty_file.as_fd();
         let poll_result = match poll::poll(
             [
                 read_stdin.then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
-                Some(PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
+                Some(PollFd::from_borrowed_fd(pty_fd, PollFlags::IN)),
                 (!stdin_buf.is_empty() || send_eot || !pty_write.borrow().is_empty())
-                    .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
+                    .then(|| PollFd::from_borrowed_fd(pty_fd, PollFlags::OUT)),
             ],
             // stop blocking every so often so we can resend EOT
             Some(std::time::Duration::from_millis(500)),
@@ -325,8 +324,7 @@ where
         // The terminal screen just prior to clearing (if `render_before_clear`).
         let mut screen_before_clear = None;
         loop {
-            if let Some(alacritty_terminal::tty::ChildEvent::Exited(_code)) = pty.next_child_event()
-            {
+            if let Some(ChildEvent::Exited) = pty.next_child_event() {
                 break;
             }
 
@@ -337,23 +335,25 @@ where
                 let lines = winsize.ws_row;
                 let columns = winsize.ws_col;
 
-                pty.on_resize(alacritty_terminal::event::WindowSize {
-                    num_lines: lines,
-                    num_cols: columns,
-                    cell_width: 1,
-                    cell_height: 1,
+                let _ = pty.set_winsize(WinsizeBuilder {
+                    rows: lines,
+                    cols: columns,
+                    width: 0,
+                    height: 0,
                 });
                 term.resize(lines, columns);
             }
 
+            let pty_file = pty.reader();
+        let pty_fd = pty_file.as_fd();
             let poll_result = match poll::poll(
                 [
                     (!stdin_buf.is_full())
                         .then(|| PollFd::from_borrowed_fd(parent_stdin.as_fd(), PollFlags::IN)),
                     (!stdout_buf.is_full())
-                        .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::IN)),
+                        .then(|| PollFd::from_borrowed_fd(pty_fd, PollFlags::IN)),
                     (!stdin_buf.is_empty())
-                        .then(|| PollFd::from_borrowed_fd(pty.file().as_fd(), PollFlags::OUT)),
+                        .then(|| PollFd::from_borrowed_fd(pty_fd, PollFlags::OUT)),
                     (!stdout_buf.is_empty())
                         .then(|| PollFd::from_borrowed_fd(parent_stdout.as_fd(), PollFlags::OUT)),
                 ],
@@ -520,34 +520,20 @@ where
 
     let screen = match cli.command {
         Some(command) => {
-            let mut pty = alacritty_terminal::tty::new(
-                &alacritty_terminal::tty::Options {
-                    shell: Some(alacritty_terminal::tty::Shell::new(
-                        command,
-                        cli.args.unwrap_or_default(),
-                    )),
-                    working_directory: None,
-                    hold: false,
-                    env: {
-                        let mut env = HashMap::new();
-                        env.insert("LINES".to_owned(), lines.to_string());
-                        env.insert("COLUMNS".to_owned(), columns.to_string());
-                        // TODO: if we're running interactively, perhaps TERM should be defaulted
-                        // to that of the controlling terminal
-                        env.insert(
-                            "TERM".to_owned(),
-                            cli.term.unwrap_or_else(|| "linux".to_owned()),
-                        );
-                        env
-                    },
-                },
-                alacritty_terminal::event::WindowSize {
-                    num_lines: lines,
-                    num_cols: columns,
-                    cell_width: 1,
-                    cell_height: 1,
-                },
-                0,
+            // The child process inherits these from the termsnap environment.
+            std::env::set_var("LINES", lines.to_string());
+            std::env::set_var("COLUMNS", columns.to_string());
+            // TODO: if we're running interactively, perhaps TERM should be defaulted
+            // to that of the controlling terminal
+            std::env::set_var("TERM", cli.term.unwrap_or_else(|| "linux".to_owned()));
+
+            let mut pty = teletypewriter::create_pty_with_fork(
+                &command,
+                &cli.args.unwrap_or_default(),
+                columns,
+                lines,
+                1,
+                1,
             )
             .unwrap();
 

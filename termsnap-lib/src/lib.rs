@@ -26,13 +26,16 @@
 #![forbid(unsafe_code)]
 use std::fmt::{Display, Write};
 
-use alacritty_terminal::{
-    term::{
-        cell::{Cell as AlacrittyCell, Flags},
-        test::TermSize,
-        Config, Term as AlacrittyTerm,
+use rio_vt::{
+    ansi::CursorShape,
+    crosswords::{
+        pos::Column,
+        square::{ContentTag, Square, Wide},
+        style::{Style, StyleFlags},
+        Crosswords, CrosswordsSize,
     },
-    vte::{self, ansi::Processor},
+    event::{EventListener, RioEvent, WindowId},
+    performer::handler::Processor,
 };
 
 mod ansi;
@@ -172,15 +175,49 @@ pub struct Cell {
 }
 
 impl Cell {
-    fn from_alacritty_cell(colors: &Colors, cell: &AlacrittyCell) -> Self {
+    fn from_square(colors: &Colors, square: &Square, styles: &[Style]) -> Self {
+        use rio_vt::config::colors::{AnsiColor, ColorRgb, NamedColor};
+
+        let (fg, bg, flags) = match square.content_tag() {
+            ContentTag::Codepoint => {
+                let style = styles
+                    .get(square.style_id() as usize)
+                    .copied()
+                    .unwrap_or_default();
+                (style.fg, style.bg, style.flags)
+            }
+            ContentTag::BgPalette => (
+                AnsiColor::Named(NamedColor::Foreground),
+                AnsiColor::Indexed(square.bg_palette_index()),
+                StyleFlags::empty(),
+            ),
+            ContentTag::BgRgb => {
+                let (r, g, b) = square.bg_rgb();
+                (
+                    AnsiColor::Named(NamedColor::Foreground),
+                    AnsiColor::Spec(ColorRgb { r, g, b }),
+                    StyleFlags::empty(),
+                )
+            }
+        };
+
+        let c = match square.c() {
+            '\0' => ' ',
+            c if matches!(square.wide(), Wide::Spacer | Wide::LeadingSpacer) => {
+                debug_assert!(c == ' ' || c == '\0');
+                ' '
+            }
+            c => c,
+        };
+
         Cell {
-            c: cell.c,
-            fg: colors.to_rgb(cell.fg),
-            bg: colors.to_rgb(cell.bg),
-            bold: cell.flags.intersects(Flags::BOLD),
-            italic: cell.flags.intersects(Flags::ITALIC),
-            underline: cell.flags.intersects(Flags::ALL_UNDERLINES),
-            strikethrough: cell.flags.intersects(Flags::STRIKEOUT),
+            c,
+            fg: colors.to_rgb(fg),
+            bg: colors.to_rgb(bg),
+            bold: flags.intersects(StyleFlags::BOLD),
+            italic: flags.intersects(StyleFlags::ITALIC),
+            underline: flags.intersects(StyleFlags::ALL_UNDERLINES),
+            strikethrough: flags.intersects(StyleFlags::STRIKEOUT),
         }
     }
 }
@@ -578,22 +615,27 @@ struct EventProxy<Ev> {
     handler: std::cell::RefCell<Ev>,
 }
 
-impl<W: PtyWriter> alacritty_terminal::event::EventListener for EventProxy<W> {
-    fn send_event(&self, event: alacritty_terminal::event::Event) {
-        use alacritty_terminal::event::Event as AEvent;
-        match event {
-            AEvent::PtyWrite(text) => self.handler.borrow_mut().write(text),
-            _ev => {}
+impl<W: PtyWriter> EventListener for EventProxy<W> {
+    fn event(&self) -> (Option<RioEvent>, bool) {
+        (None, false)
+    }
+
+    fn send_event(&self, event: RioEvent, _window_id: WindowId) {
+        if let RioEvent::PtyWrite(_route, text) = event {
+            self.handler.borrow_mut().write(text)
         }
     }
 }
+
+/// Scrollback history limit, matching the previous emulator default.
+const SCROLLBACK_HISTORY: usize = 10_000;
 
 /// An in-memory terminal emulator.
 pub struct Term<W: PtyWriter> {
     lines: u16,
     columns: u16,
-    term: AlacrittyTerm<EventProxy<W>>,
-    processor: Option<vte::ansi::Processor<vte::ansi::StdSyncHandler>>,
+    term: Crosswords<EventProxy<W>>,
+    processor: Option<Processor>,
 }
 
 impl<W: PtyWriter> Term<W> {
@@ -602,22 +644,22 @@ impl<W: PtyWriter> Term<W> {
     /// [`pty_writer`](PtyWriter) is used to send output from the emulated terminal in reponse to ANSI requests.
     /// Use [`VoidPtyWriter`] if you do not need to send responses to status requests.
     pub fn new(lines: u16, columns: u16, pty_writer: W) -> Self {
-        let term = AlacrittyTerm::new(
-            Config::default(),
-            &TermSize {
-                columns: columns.into(),
-                screen_lines: lines.into(),
-            },
+        let term = Crosswords::new(
+            CrosswordsSize::new(columns.max(1).into(), lines.max(1).into()),
+            CursorShape::Block,
             EventProxy {
                 handler: pty_writer.into(),
             },
+            WindowId::from(0),
+            0,
+            SCROLLBACK_HISTORY,
         );
 
         Term {
             lines,
             columns,
             term,
-            processor: Some(Processor::new()),
+            processor: Some(Processor::default()),
         }
     }
 
@@ -626,7 +668,7 @@ impl<W: PtyWriter> Term<W> {
         self.processor
             .as_mut()
             .expect("unreachable")
-            .advance(&mut self.term, byte);
+            .advance(&mut self.term, &[byte]);
     }
 
     /// Process one byte of ANSI-escaped terminal data. Some ANSI signals will trigger callback
@@ -643,19 +685,16 @@ impl<W: PtyWriter> Term<W> {
             cb: &mut cb,
         };
 
-        processor.advance(&mut handler, byte);
+        processor.advance(&mut handler, &[byte]);
         self.processor = Some(processor);
     }
 
     /// Resize the terminal screen to the specified dimension.
     pub fn resize(&mut self, lines: u16, columns: u16) {
-        let new_size = TermSize {
-            columns: columns.into(),
-            screen_lines: lines.into(),
-        };
         self.lines = lines;
         self.columns = columns;
-        self.term.resize(new_size);
+        self.term
+            .resize(CrosswordsSize::new(columns.max(1).into(), lines.max(1).into()));
     }
 
     /// Get a snapshot of the current terminal screen.
@@ -664,14 +703,18 @@ impl<W: PtyWriter> Term<W> {
         let mut colors = Colors::default();
         colors.overlay(self.term.colors());
 
+        let styles = self.term.grid.style_set.styles();
         Screen {
             lines: self.lines,
             columns: self.columns,
             cells: self
                 .term
-                .grid()
-                .display_iter()
-                .map(|point_cell| Cell::from_alacritty_cell(&colors, point_cell.cell))
+                .visible_rows()
+                .iter()
+                .flat_map(|row| {
+                    (0..usize::from(self.columns))
+                        .map(|col| Cell::from_square(&colors, &row[Column(col)], styles))
+                })
                 .collect(),
         }
     }

@@ -19,10 +19,11 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [workspace.dependencies]
-alacritty_terminal = "0.24.1"
+rio-vt = "0.5.3"
 
 [dependencies]
-alacritty_terminal = { workspace = true }
+rio-vt = { workspace = true }
+teletypewriter = "0.5.3"
 anyhow = "1.0.86"
 arrayvec = "0.7.4"
 clap = { version = "4.5.7", features = ["derive"] }
