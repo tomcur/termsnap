@@ -1,5 +1,5 @@
 use arrayvec::ArrayVec;
-use rustix::event::{poll as rustix_poll, PollFd};
+use rustix::event::{poll as rustix_poll, PollFd, Timespec};
 
 /// Block until any of the [PollFd]s is satisfied. Returns an array with the [PollFd]s that had
 /// events (the result array's order is equal to the input order). If any [PollFd] is [None], it is
@@ -18,12 +18,8 @@ pub fn poll<const C: usize>(
         }
     }
 
-    rustix_poll(
-        &mut polls,
-        timeout
-            .and_then(|t| i32::try_from(t.as_millis().min(i32::MAX as u128)).ok())
-            .unwrap_or(-1),
-    )?;
+    let timeout = timeout.and_then(|t| Timespec::try_from(t).ok());
+    rustix_poll(&mut polls, timeout.as_ref())?;
 
     let mut result = [false; C];
     for (poll, poll_num) in polls.into_iter().zip(poll_nums) {
