@@ -19,7 +19,7 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [workspace.dependencies]
-alacritty_terminal = "0.24.1"
+alacritty_terminal = "0.26.0"
 
 [dependencies]
 alacritty_terminal = { workspace = true }

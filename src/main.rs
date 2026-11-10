@@ -527,7 +527,7 @@ where
                         cli.args.unwrap_or_default(),
                     )),
                     working_directory: None,
-                    hold: false,
+                    drain_on_exit: false,
                     env: {
                         let mut env = HashMap::new();
                         env.insert("LINES".to_owned(), lines.to_string());

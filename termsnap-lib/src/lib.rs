@@ -626,7 +626,7 @@ impl<W: PtyWriter> Term<W> {
         self.processor
             .as_mut()
             .expect("unreachable")
-            .advance(&mut self.term, byte);
+            .advance(&mut self.term, &[byte]);
     }
 
     /// Process one byte of ANSI-escaped terminal data. Some ANSI signals will trigger callback
@@ -643,7 +643,7 @@ impl<W: PtyWriter> Term<W> {
             cb: &mut cb,
         };
 
-        processor.advance(&mut handler, byte);
+        processor.advance(&mut handler, &[byte]);
         self.processor = Some(processor);
     }
 
